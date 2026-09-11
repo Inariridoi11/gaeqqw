@@ -14,7 +14,9 @@ const { archive } = require('./lib/archive');
 const ROOT = __dirname;
 const STORE = path.join(ROOT, 'archive');
 const INDEX = path.join(STORE, 'index.json');
-const PORT = +(process.argv[process.argv.indexOf('--port') + 1] || process.env.PORT || 7777);
+const argAt = process.argv.indexOf('--port');
+const portArg = argAt !== -1 ? process.argv[argAt + 1] : null;
+const PORT = (n => Number.isInteger(n) && n > 0 && n < 65536 ? n : 7777)(parseInt(portArg || process.env.PORT, 10));
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
@@ -123,7 +125,23 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log('\n  📦 Archivador offline listo en  \x1b[36mhttp://localhost:' + PORT + '\x1b[0m');
-  console.log('  Guardando en: ' + STORE + '\n');
+function start(port, tries = 0) {
+  server.once('error', err => {
+    if (err.code === 'EADDRINUSE' && tries < 10) {
+      console.log('  El puerto ' + port + ' está ocupado, probando el ' + (port + 1) + '…');
+      return start(port + 1, tries + 1);
+    }
+    if (err.code === 'EADDRINUSE') console.error('\n  ✖ No hay puertos libres entre ' + PORT + ' y ' + port + '.\n    Cierra el programa que los ocupa o usa:  node offline/server.js --port 9000\n');
+    else if (err.code === 'EACCES') console.error('\n  ✖ Sin permiso para usar el puerto ' + port + '. Prueba uno por encima de 1024:  node offline/server.js --port 8080\n');
+    else console.error('\n  ✖ ' + err.message + '\n');
+    process.exit(1);
+  });
+  server.listen(port);
+}
+server.on('listening', () => {
+  const p = server.address().port;
+  console.log('\n  📦 Archivador offline listo en  \x1b[36mhttp://localhost:' + p + '\x1b[0m');
+  console.log('  Guardando en: ' + STORE);
+  console.log('  Para parar: Ctrl+C\n');
 });
+start(PORT);
