@@ -61,6 +61,17 @@ assets/arcade.js    utilidades opcionales: beep sintetizado, bucle de render, r�
 - **Sonido** generado con osciladores de Web Audio (nada de ficheros de audio).
 - Probado cargando los 56 juegos en Chromium (Playwright) verificando que no lanzan errores de JS.
 
+## 📦 Extra: Archivador offline
+
+En [`offline/`](offline/) hay una herramienta aparte: pegas una URL y guarda la web entera
+(CSS, imágenes, fuentes, scripts) como **un único `.html` autocontenido** que funciona sin conexión.
+
+```bash
+node offline/server.js   # -> http://localhost:7777
+```
+
+Sin dependencias, solo Node 18+. Detalles y límites en [`offline/README.md`](offline/README.md).
+
 ## Licencia
 
 Código propio escrito para este repositorio. Los juegos son reinterpretaciones originales
