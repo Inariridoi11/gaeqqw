@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>✊ Piedra, papel o tijera</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>✊ Piedra, papel o tijera</h1></header><main>
+<style>#pick{display:flex;gap:14px;justify-content:center;margin:16px 0}
+#pick button{font-size:44px;padding:16px 22px;border-radius:16px}
+#duel{font-size:64px;display:flex;gap:30px;justify-content:center;align-items:center;min-height:100px}</style>
+<div class="hud"><span>Tú <b id="a">0</b></span><span>CPU <b id="b">0</b></span><span>Empates <b id="d">0</b></span><span id="st">¡Elige!</span></div>
+<div id="duel"><span id="me">❔</span><span style="font-size:24px;color:var(--dim)">VS</span><span id="cpu">❔</span></div>
+<div id="pick">
+ <button class="btn" onclick="play(0)">✊</button>
+ <button class="btn" onclick="play(1)">✋</button>
+ <button class="btn" onclick="play(2)">✌️</button></div>
+<p class="help">La CPU aprende tus patrones: intenta no ser predecible. Primero a 10 gana.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const E=['✊','✋','✌️'],N=['piedra','papel','tijera'];
+let sa=0,sb=0,sd=0,hist=[],freq=[[0,0,0],[0,0,0],[0,0,0]];
+function play(m){
+ let guess=Math.random()*3|0;
+ if(hist.length){ const last=hist[hist.length-1];
+  const f=freq[last]; const mx=Math.max(...f);
+  if(mx>0)guess=f.indexOf(mx);}
+ const cpu=(guess+1)%3; // contrarresta lo que predice
+ if(hist.length)freq[hist[hist.length-1]][m]++;
+ hist.push(m);
+ document.getElementById('me').textContent=E[m];
+ document.getElementById('cpu').textContent=E[cpu];
+ let r;
+ if(m===cpu){sd++;r='🤝 Empate';Arcade.beep(400,.1);}
+ else if((m===0&&cpu===2)||(m===1&&cpu===0)||(m===2&&cpu===1)){sa++;r='🏆 Ganas ('+N[m]+' gana a '+N[cpu]+')';Arcade.beep(1000,.12);}
+ else {sb++;r='❌ Pierdes ('+N[cpu]+' gana a '+N[m]+')';Arcade.beep(180,.15);}
+ document.getElementById('a').textContent=sa;document.getElementById('b').textContent=sb;document.getElementById('d').textContent=sd;
+ document.getElementById('st').textContent= sa>=10?'🏆 ¡GANAS LA PARTIDA!':sb>=10?'💀 Gana la CPU':r;}
+</script></body></html>

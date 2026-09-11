@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎲 Dados (Generala)</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🎲 Dados (Generala)</h1></header><main>
+<style>#dice{display:flex;gap:10px;justify-content:center;margin:14px 0}
+.die{width:64px;height:64px;border-radius:12px;background:#f4f4f4;color:#111;font-size:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:3px solid transparent}
+.die.hold{border-color:#5ee0a0;background:#cfe9dc}
+table{border-collapse:collapse;font-size:13px}
+td{border:1px solid var(--line);padding:6px 10px}
+td.sc{cursor:pointer;color:var(--acc2);text-align:right}
+td.done{color:var(--dim);cursor:default}</style>
+<div class="hud"><span>Tiradas <b id="r">3</b></span><span>Total <b id="tt">0</b></span><span id="st">Pulsa Tirar</span></div>
+<div id="dice"></div>
+<div class="row"><button class="btn" onclick="rollDice()">🎲 Tirar</button><button class="btn" onclick="init()">Nueva partida</button></div>
+<table id="tb"></table>
+<p class="help">Tres tiradas por turno: haz clic en los dados para conservarlos y luego elige una categoría.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const CATS=[['Unos',d=>sum(d,1)],['Doses',d=>sum(d,2)],['Treses',d=>sum(d,3)],['Cuatros',d=>sum(d,4)],
+['Cincos',d=>sum(d,5)],['Seises',d=>sum(d,6)],
+['Trío',d=>ofKind(d,3)?tot(d):0],['Póker',d=>ofKind(d,4)?tot(d):0],
+['Full',d=>full(d)?25:0],['Escalera corta',d=>straight(d,4)?30:0],['Escalera larga',d=>straight(d,5)?40:0],
+['Generala',d=>ofKind(d,5)?50:0],['Chance',d=>tot(d)]];
+let dice,hold,rolls,score;
+const sum=(d,n)=>d.filter(v=>v===n).length*n, tot=d=>d.reduce((a,b)=>a+b,0);
+const counts=d=>{const c=[0,0,0,0,0,0,0];d.forEach(v=>c[v]++);return c;};
+const ofKind=(d,n)=>counts(d).some(v=>v>=n);
+const full=d=>{const c=counts(d).filter(v=>v);return c.includes(3)&&c.includes(2)||c.includes(5);};
+const straight=(d,n)=>{const s=[...new Set(d)].sort();let run=1,best=1;
+ for(let i=1;i<s.length;i++){if(s[i]===s[i-1]+1){run++;best=Math.max(best,run);}else run=1;}return best>=n;};
+function init(){dice=[1,1,1,1,1];hold=[0,0,0,0,0];rolls=3;score=CATS.map(()=>null);draw();}
+function rollDice(){ if(rolls<=0)return;
+ dice=dice.map((v,i)=>hold[i]?v:1+(Math.random()*6|0));
+ rolls--;Arcade.beep(600,.08);
+ document.getElementById('st').textContent=rolls?'Elige dados o categoría':'Elige una categoría';
+ draw();}
+function pick(i){ if(score[i]!==null||rolls===3)return;
+ score[i]=CATS[i][1](dice);Arcade.beep(900,.12);
+ rolls=3;hold=[0,0,0,0,0];
+ if(score.every(v=>v!==null)){const t=score.reduce((a,b)=>a+b,0);
+  document.getElementById('st').textContent='🏆 Fin — '+t+' puntos';}
+ else document.getElementById('st').textContent='Pulsa Tirar';
+ draw();}
+function draw(){
+ const D=document.getElementById('dice');D.innerHTML='';
+ dice.forEach((v,i)=>{const d=document.createElement('div');d.className='die'+(hold[i]?' hold':'');
+  d.textContent='⚀⚁⚂⚃⚄⚅'[v-1];d.onclick=()=>{if(rolls<3){hold[i]^=1;draw();}};D.appendChild(d);});
+ const T=document.getElementById('tb');T.innerHTML='';
+ CATS.forEach((c,i)=>{const tr=document.createElement('tr');
+  tr.innerHTML='<td>'+c[0]+'</td>';
+  const td=document.createElement('td');
+  td.className='sc'+(score[i]!==null?' done':'');
+  td.textContent=score[i]!==null?score[i]:(rolls<3?c[1](dice):'—');
+  if(score[i]===null)td.onclick=()=>pick(i);
+  tr.appendChild(td);T.appendChild(tr);});
+ document.getElementById('r').textContent=rolls;
+ document.getElementById('tt').textContent=score.filter(v=>v!==null).reduce((a,b)=>a+b,0);}
+init();</script></body></html>

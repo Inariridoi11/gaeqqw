@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🫧 Bubble Shooter</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🫧 Bubble Shooter</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Disparos <b id="n">0</b></span><span>Récord <b id="b">0</b></span><span id="st"></span></div>
+<canvas id="c" width="480" height="560"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Apunta con el ratón/dedo y dispara. Junta 3 o más del mismo color para reventarlas.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d'),R=22,COLS=10;
+const CL=['#ff6b6b','#5ee0a0','#7aa2ff','#e8d24a','#b06bd6'];
+let grid,cur,nxt,shot,angle,score,shots,dead;
+function init(){grid=[];for(let r=0;r<6;r++){grid.push([]);
+  for(let i=0;i<COLS-(r%2);i++)grid[r].push(CL[Math.random()*CL.length|0]);}
+ for(let r=6;r<14;r++)grid.push([]);
+ cur=CL[Math.random()*CL.length|0];nxt=CL[Math.random()*CL.length|0];
+ shot=null;angle=-Math.PI/2;score=0;shots=0;dead=0;document.getElementById('st').textContent='';}
+function cx(r,i){return i*2*R+R+(r%2?R:0);}
+function cy(r){return r*R*1.74+R;}
+c.onmousemove=e=>{const b=c.getBoundingClientRect();
+ const mx=(e.clientX-b.left)*(480/b.width),my=(e.clientY-b.top)*(560/b.height);
+ angle=Math.atan2(my-540,mx-240); angle=Math.max(-Math.PI+.25,Math.min(-.25,angle));};
+c.ontouchmove=e=>{const t=e.touches[0];c.onmousemove(t);e.preventDefault();};
+c.onclick=()=>{ if(shot||dead)return; shot={x:240,y:540,vx:Math.cos(angle)*430,vy:Math.sin(angle)*430,c:cur};
+ cur=nxt;nxt=CL[Math.random()*CL.length|0];shots++;Arcade.beep(600,.05);};
+c.ontouchstart=e=>{c.onclick();e.preventDefault();};
+function snap(){
+ let br=0,bi=0,bd=1e9;
+ for(let r=0;r<14;r++)for(let i=0;i<COLS-(r%2);i++){
+  if(grid[r][i])continue;
+  const d=Math.hypot(cx(r,i)-shot.x,cy(r)-shot.y);
+  const touch=neigh(r,i).some(([nr,ni])=>grid[nr]&&grid[nr][ni])||r===0;
+  if(touch&&d<bd){bd=d;br=r;bi=i;}}
+ grid[br][bi]=shot.c;
+ const grp=group(br,bi,shot.c);
+ if(grp.length>=3){grp.forEach(([r,i])=>grid[r][i]=undefined);score+=grp.length*15;Arcade.beep(1000,.12);
+  // caída de burbujas sueltas
+  const keep=new Set();
+  for(let i=0;i<COLS;i++)if(grid[0][i])flood(0,i,keep);
+  for(let r=0;r<14;r++)for(let i=0;i<COLS-(r%2);i++)
+   if(grid[r][i]&&!keep.has(r+','+i)){grid[r][i]=undefined;score+=25;}}
+ shot=null;
+ if(grid.some((row,r)=>r>=11&&row.some(v=>v))){dead=1;document.getElementById('st').textContent='💀 Las burbujas llegaron abajo';}
+ if(grid.every(row=>row.every(v=>!v))){dead=1;document.getElementById('st').textContent='🏆 ¡Tablero limpio!';}}
+function neigh(r,i){const odd=r%2;
+ return [[r,i-1],[r,i+1],[r-1,i-(odd?0:1)],[r-1,i+(odd?1:0)],[r+1,i-(odd?0:1)],[r+1,i+(odd?1:0)]]
+  .filter(([a,b])=>a>=0&&a<14&&b>=0&&b<COLS-(a%2));}
+function group(r,i,col,seen=new Set()){const k=r+','+i;
+ if(seen.has(k)||grid[r][i]!==col)return [];seen.add(k);
+ let res=[[r,i]];for(const [a,b] of neigh(r,i))res=res.concat(group(a,b,col,seen));return res;}
+function flood(r,i,keep){const k=r+','+i;
+ if(keep.has(k)||!grid[r]||!grid[r][i])return;keep.add(k);
+ for(const [a,b] of neigh(r,i))flood(a,b,keep);}
+Arcade.loop(dt=>{
+ if(shot){ for(let k=0;k<4;k++){
+  shot.x+=shot.vx*dt/4;shot.y+=shot.vy*dt/4;
+  if(shot.x<R){shot.x=R;shot.vx*=-1;} if(shot.x>480-R){shot.x=480-R;shot.vx*=-1;}
+  if(shot.y<R){snap();break;}
+  let hit=0;
+  for(let r=0;r<14&&!hit;r++)for(let i=0;i<COLS-(r%2);i++)
+   if(grid[r][i]&&Math.hypot(cx(r,i)-shot.x,cy(r)-shot.y)<R*1.9){hit=1;break;}
+  if(hit){snap();break;} } }
+ x.fillStyle='#0b0d14';x.fillRect(0,0,480,560);
+ x.strokeStyle='#26304a';x.beginPath();x.moveTo(0,480);x.lineTo(480,480);x.stroke();
+ for(let r=0;r<14;r++)for(let i=0;i<COLS-(r%2);i++)if(grid[r][i]){
+  x.fillStyle=grid[r][i];x.beginPath();x.arc(cx(r,i),cy(r),R-2,0,7);x.fill();
+  x.fillStyle='rgba(255,255,255,.25)';x.beginPath();x.arc(cx(r,i)-6,cy(r)-6,5,0,7);x.fill();}
+ if(shot){x.fillStyle=shot.c;x.beginPath();x.arc(shot.x,shot.y,R-2,0,7);x.fill();}
+ x.strokeStyle='#94a0bd55';x.lineWidth=2;x.setLineDash([5,8]);
+ x.beginPath();x.moveTo(240,540);x.lineTo(240+Math.cos(angle)*180,540+Math.sin(angle)*180);x.stroke();x.setLineDash([]);
+ x.fillStyle=cur;x.beginPath();x.arc(240,540,R-2,0,7);x.fill();
+ x.fillStyle=nxt;x.beginPath();x.arc(430,540,14,0,7);x.fill();
+ x.fillStyle='#94a0bd';x.font='11px monospace';x.fillText('SIG',400,545);
+ s.textContent=score;n.textContent=shots;b.textContent=Arcade.best('bubble',score);});
+init();</script></body></html>

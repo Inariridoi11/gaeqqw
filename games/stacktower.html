@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🗼 Torre de bloques</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🗼 Torre de bloques</h1></header><main>
+<div class="hud"><span>Altura <b id="s">0</b></span><span>Récord <b id="b">0</b></span><span id="st"></span></div>
+<canvas id="c" width="420" height="620"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Pulsa ESPACIO o toca para soltar el bloque. Lo que sobresalga se corta.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),X=c.getContext('2d');
+let stack,cur,dir,score,dead,cam,sp;
+function init(){stack=[{x:110,w:200,c:'#5ee0a0'}];cur={x:0,w:200,c:hsl(1)};dir=1;score=0;dead=0;cam=0;sp=170;}
+function hsl(n){return 'hsl('+((n*28)%360)+',65%,58%)';}
+function drop(){ if(dead){init();return;}
+ const top=stack[stack.length-1];
+ const l=Math.max(cur.x,top.x), r=Math.min(cur.x+cur.w,top.x+top.w);
+ const w=r-l;
+ if(w<=0){dead=1;Arcade.beep(110,.4);return;}
+ stack.push({x:l,w,c:cur.c});score++;
+ Arcade.beep(400+score*18,.07);
+ sp=Math.min(420,sp+9);
+ cur={x:0,w,c:hsl(score+1)};dir=1;
+ if(score>3)cam=(score-3)*26;}
+addEventListener('keydown',e=>{if(e.code==='Space'){drop();e.preventDefault();}});
+c.ontouchstart=e=>{drop();e.preventDefault();};c.onmousedown=drop;
+Arcade.loop(dt=>{
+ if(!dead){cur.x+=dir*sp*dt;
+  if(cur.x<0){cur.x=0;dir=1;} if(cur.x+cur.w>420){cur.x=420-cur.w;dir=-1;}}
+ const g=X.createLinearGradient(0,0,0,620);g.addColorStop(0,'#182444');g.addColorStop(1,'#0b0d14');
+ X.fillStyle=g;X.fillRect(0,0,420,620);
+ const H=26;
+ stack.forEach((b,i)=>{const y=580-i*H+cam;
+  if(y<-30||y>640)return;
+  X.fillStyle=b.c;X.fillRect(b.x,y,b.w,H-3);
+  X.fillStyle='rgba(0,0,0,.25)';X.fillRect(b.x,y+H-8,b.w,5);});
+ if(!dead){const y=580-stack.length*H+cam;
+  X.fillStyle=cur.c;X.fillRect(cur.x,y,cur.w,H-3);}
+ if(dead){X.fillStyle='rgba(0,0,0,.75)';X.fillRect(0,0,420,620);X.fillStyle='#ff6b6b';X.font='bold 26px monospace';X.textAlign='center';
+  X.fillText('¡FALLASTE!',210,300);X.font='13px monospace';X.fillStyle='#94a0bd';X.fillText('ESPACIO para reiniciar',210,330);X.textAlign='left';}
+ s.textContent=score;b.textContent=Arcade.best('stack',score);});
+init();</script></body></html>

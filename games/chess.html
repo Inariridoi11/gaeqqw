@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ajedrez</title><link rel="stylesheet" href="../assets/arcade.css">
+<style>
+#board{display:grid;grid-template-columns:repeat(8,1fr);width:min(92vw,560px);aspect-ratio:1;border:2px solid var(--line);border-radius:8px;overflow:hidden;user-select:none}
+.sq{display:flex;align-items:center;justify-content:center;font-size:min(9vw,44px);line-height:1;cursor:pointer;position:relative}
+.lt{background:#e8ddc4}.dk{background:#7b9a6e}
+.sel{box-shadow:inset 0 0 0 4px #f5c542}
+.mv::after{content:'';position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(0,0,0,.35)}
+.cap::after{content:'';position:absolute;inset:6%;border-radius:50%;border:4px solid rgba(200,40,40,.6);background:none;width:auto;height:auto}
+.chk{background:#d9534f !important}
+.w{color:#fff;text-shadow:0 0 2px #000,0 1px 2px #000}
+.b{color:#111;text-shadow:0 0 2px #999}
+#log{max-height:120px;overflow:auto;font-size:12px;color:var(--dim);width:min(92vw,560px);line-height:1.6}
+</style></head>
+<body>
+<header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>♛ Ajedrez</h1></header>
+<main>
+  <div class="hud"><span>Turno: <b id="turn">Blancas</b></span><span>Nivel: <b id="lvl">2</b></span><span id="state"></span></div>
+  <div id="board"></div>
+  <div class="row">
+    <button class="btn" onclick="newGame()">Nueva partida</button>
+    <button class="btn" onclick="undo()">Deshacer</button>
+    <button class="btn" onclick="setLevel()">Dificultad</button>
+    <button class="btn" onclick="flip()">Girar tablero</button>
+  </div>
+  <div id="log"></div>
+  <p class="help">Haz clic en una pieza y luego en la casilla destino. Enroque, al paso y coronación incluidos. La IA juega con las negras.</p>
+</main>
+<script>
+/* ---------- Estado ---------- */
+const INIT = "rnbqkbnrpppppppp................................PPPPPPPPRNBQKBNR".split("");
+let bd, turn, castle, ep, half, hist, sel, flipped=false, level=2, over=false;
+
+function newGame(){
+  bd=INIT.slice(); turn='w'; castle={K:1,Q:1,k:1,q:1}; ep=-1; half=0; hist=[]; sel=null; over=false;
+  document.getElementById('log').innerHTML=''; draw(); status('');
+}
+const isW=p=>p!=='.'&&p===p.toUpperCase();
+const isB=p=>p!=='.'&&p===p.toLowerCase();
+const own=(p,c)=>c==='w'?isW(p):isB(p);
+const F=i=>i&7, R=i=>i>>3;
+
+/* ---------- Generación de jugadas ---------- */
+const DIRS={n:[-17,-15,-10,-6,6,10,15,17],b:[-9,-7,7,9],r:[-8,-1,1,8],k:[-9,-8,-7,-1,1,7,8,9]};
+function slide(b,i,ds,c,out,once){
+  for(const d of ds){ let t=i;
+    while(true){ const f0=F(t); t+=d;
+      if(t<0||t>63) break;
+      if(Math.abs(F(t)-f0)>2) break;
+      const q=b[t];
+      if(q!=='.'){ if(!own(q,c)) out.push([i,t]); break; }
+      out.push([i,t]); if(once) break;
+    } }
+}
+function moves(b,c,cs,epq){
+  const out=[];
+  for(let i=0;i<64;i++){ const p=b[i]; if(p==='.'||!own(p,c))continue;
+    const t=p.toLowerCase();
+    if(t==='p'){
+      const dir=c==='w'?-8:8, start=c==='w'?6:1, last=c==='w'?0:7;
+      let f=i+dir;
+      if(f>=0&&f<64&&b[f]==='.'){ push(out,i,f,last);
+        const f2=i+2*dir; if(R(i)===start&&b[f2]==='.') out.push([i,f2]); }
+      for(const dx of[-1,1]){ const g=i+dir+dx;
+        if(g<0||g>63||Math.abs(F(g)-F(i))!==1)continue;
+        if(b[g]!=='.'&&!own(b[g],c)) push(out,i,g,last);
+        else if(g===epq) out.push([i,g]);
+      }
+    }
+    else if(t==='n') slide(b,i,DIRS.n,c,out,true);
+    else if(t==='b') slide(b,i,DIRS.b,c,out);
+    else if(t==='r') slide(b,i,DIRS.r,c,out);
+    else if(t==='q') slide(b,i,DIRS.k,c,out);
+    else if(t==='k'){ slide(b,i,DIRS.k,c,out,true);
+      const home=c==='w'?60:4, KK=c==='w'?'K':'k', QQ=c==='w'?'Q':'q';
+      if(i===home&&!attacked(b,home,c==='w'?'b':'w')){
+        if(cs[KK]&&b[home+1]==='.'&&b[home+2]==='.'&&!attacked(b,home+1,c==='w'?'b':'w')) out.push([i,home+2]);
+        if(cs[QQ]&&b[home-1]==='.'&&b[home-2]==='.'&&b[home-3]==='.'&&!attacked(b,home-1,c==='w'?'b':'w')) out.push([i,home-2]);
+      }
+    }
+  }
+  return out;
+}
+function push(out,i,f,last){ if(R(f)===last){ for(const pr of['q','r','b','n']) out.push([i,f,pr]); } else out.push([i,f]); }
+
+function attacked(b,sq,by){
+  for(const m of pseudo(b,by)) if(m[1]===sq) return true; return false;
+}
+function pseudo(b,c){ // sin enroque (evita recursión)
+  const out=[];
+  for(let i=0;i<64;i++){ const p=b[i]; if(p==='.'||!own(p,c))continue; const t=p.toLowerCase();
+    if(t==='p'){ const dir=c==='w'?-8:8;
+      for(const dx of[-1,1]){ const g=i+dir+dx; if(g>=0&&g<64&&Math.abs(F(g)-F(i))===1) out.push([i,g]); } }
+    else if(t==='n') slide(b,i,DIRS.n,c,out,true);
+    else if(t==='b') slide(b,i,DIRS.b,c,out);
+    else if(t==='r') slide(b,i,DIRS.r,c,out);
+    else if(t==='q') slide(b,i,DIRS.k,c,out);
+    else if(t==='k') slide(b,i,DIRS.k,c,out,true);
+  }
+  return out;
+}
+function kingSq(b,c){ const k=c==='w'?'K':'k'; return b.indexOf(k); }
+function inCheck(b,c){ const k=kingSq(b,c); return k<0?false:attacked(b,k,c==='w'?'b':'w'); }
+
+function apply(b,cs,epq,m){
+  const nb=b.slice(), ncs={...cs};
+  const [i,f,pr]=m, p=nb[i], c=isW(p)?'w':'b', t=p.toLowerCase();
+  let nep=-1, cap=nb[f]!=='.';
+  nb[f]=pr? (c==='w'?pr.toUpperCase():pr) : p; nb[i]='.';
+  if(t==='p'){ cap=true;
+    if(Math.abs(f-i)===16) nep=(i+f)/2;
+    if(f===epq&&Math.abs(F(f)-F(i))===1&&b[f]==='.'){ nb[f+(c==='w'?8:-8)]='.'; }
+  }
+  if(t==='k'){ if(c==='w'){ncs.K=ncs.Q=0}else{ncs.k=ncs.q=0}
+    if(f-i===2){ nb[f-1]=nb[f+1]; nb[f+1]='.'; }
+    if(i-f===2){ nb[f+1]=nb[f-2]; nb[f-2]='.'; }
+  }
+  if(i===63||f===63) ncs.K=0; if(i===56||f===56) ncs.Q=0;
+  if(i===7||f===7) ncs.k=0; if(i===0||f===0) ncs.q=0;
+  return {b:nb,cs:ncs,ep:nep,cap};
+}
+function legal(b,c,cs,epq){
+  return moves(b,c,cs,epq).filter(m=>{ const r=apply(b,cs,epq,m); return !inCheck(r.b,c); });
+}
+
+/* ---------- Evaluación e IA ---------- */
+const VAL={p:100,n:320,b:330,r:500,q:900,k:20000};
+const PST={
+ p:[0,0,0,0,0,0,0,0,50,50,50,50,50,50,50,50,10,10,20,30,30,20,10,10,5,5,10,25,25,10,5,5,0,0,0,20,20,0,0,0,5,-5,-10,0,0,-10,-5,5,5,10,10,-20,-20,10,10,5,0,0,0,0,0,0,0,0],
+ n:[-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,10,15,15,10,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50],
+ b:[-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20],
+ r:[0,0,0,0,0,0,0,0,5,10,10,10,10,10,10,5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,0,0,0,5,5,0,0,0],
+ q:[-20,-10,-10,-5,-5,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,5,5,5,0,-10,-5,0,5,5,5,5,0,-5,0,0,5,5,5,5,0,-5,-10,5,5,5,5,5,0,-10,-10,0,5,0,0,0,0,-10,-20,-10,-10,-5,-5,-10,-10,-20],
+ k:[-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20]
+};
+function evaluate(b){
+  let s=0;
+  for(let i=0;i<64;i++){ const p=b[i]; if(p==='.')continue;
+    const t=p.toLowerCase(), w=isW(p);
+    const pst=PST[t][w?i:63-i];
+    s+= (w?1:-1)*(VAL[t]+pst);
+  }
+  return s;
+}
+function search(b,c,cs,epq,depth,alpha,beta){
+  if(depth===0) return evaluate(b);
+  const ms=legal(b,c,cs,epq);
+  if(!ms.length) return inCheck(b,c) ? (c==='w'?-99999+depth:99999-depth) : 0;
+  ms.sort((x,y)=>(b[y[1]]!=='.'?1:0)-(b[x[1]]!=='.'?1:0));
+  if(c==='w'){ let best=-1e9;
+    for(const m of ms){ const r=apply(b,cs,epq,m);
+      best=Math.max(best,search(r.b,'b',r.cs,r.ep,depth-1,alpha,beta));
+      alpha=Math.max(alpha,best); if(beta<=alpha)break; }
+    return best;
+  } else { let best=1e9;
+    for(const m of ms){ const r=apply(b,cs,epq,m);
+      best=Math.min(best,search(r.b,'w',r.cs,r.ep,depth-1,alpha,beta));
+      beta=Math.min(beta,best); if(beta<=alpha)break; }
+    return best;
+  }
+}
+function aiMove(){
+  const ms=legal(bd,'b',castle,ep); if(!ms.length)return null;
+  let best=1e9, pick=[];
+  for(const m of ms){ const r=apply(bd,castle,ep,m);
+    let v=search(r.b,'w',r.cs,r.ep,level,-1e9,1e9);
+    v+= (Math.random()-0.5)*(level<2?40:6);
+    if(v<best-0.0001){best=v;pick=[m];} else if(Math.abs(v-best)<0.0001) pick.push(m); }
+  return pick[Math.random()*pick.length|0];
+}
+
+/* ---------- UI ---------- */
+const GLY={P:'♙',N:'♘',B:'♗',R:'♖',Q:'♕',K:'♔',p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+const board=document.getElementById('board');
+function draw(){
+  board.innerHTML='';
+  const lm = sel!==null ? legal(bd,turn,castle,ep).filter(m=>m[0]===sel) : [];
+  const order=[...Array(64).keys()]; if(flipped) order.reverse();
+  for(const i of order){
+    const d=document.createElement('div');
+    d.className='sq '+(((F(i)+R(i))%2)?'dk':'lt');
+    const p=bd[i];
+    if(p!=='.'){ d.textContent=GLY[p]; d.classList.add(isW(p)?'w':'b'); }
+    if(i===sel) d.classList.add('sel');
+    const mv=lm.find(m=>m[1]===i);
+    if(mv) d.classList.add(bd[i]==='.'?'mv':'cap');
+    if(p.toLowerCase()==='k'&&own(p,turn)&&inCheck(bd,turn)) d.classList.add('chk');
+    d.onclick=()=>click(i);
+    board.appendChild(d);
+  }
+  document.getElementById('turn').textContent = turn==='w'?'Blancas':'Negras';
+  document.getElementById('lvl').textContent = level;
+}
+function click(i){
+  if(over||turn!=='w')return;
+  const lm=legal(bd,'w',castle,ep);
+  const mv=sel!==null&&lm.find(m=>m[0]===sel&&m[1]===i);
+  if(mv){ let m=mv;
+    const cands=lm.filter(x=>x[0]===sel&&x[1]===i);
+    if(cands.length>1){ const c=prompt('Coronar a (q/r/b/n):','q')||'q'; m=cands.find(x=>x[2]===c.toLowerCase())||cands[0]; }
+    doMove(m); sel=null; draw();
+    if(!over) setTimeout(()=>{ const am=aiMove(); if(am){doMove(am);} draw(); },180);
+    return;
+  }
+  sel = (bd[i]!=='.'&&isW(bd[i])) ? i : null; draw();
+}
+function nota(m){
+  const f='abcdefgh'[F(m[0])]+(8-R(m[0])), t='abcdefgh'[F(m[1])]+(8-R(m[1]));
+  return bd[m[0]].toUpperCase().replace('P','')+f+'-'+t+(m[2]?'='+m[2].toUpperCase():'');
+}
+function doMove(m){
+  const txt=nota(m);
+  hist.push({b:bd.slice(),cs:{...castle},ep,turn});
+  const r=apply(bd,castle,ep,m);
+  bd=r.b; castle=r.cs; ep=r.ep; turn=turn==='w'?'b':'w';
+  const L=document.getElementById('log');
+  L.innerHTML+= (hist.length%2?'<br>'+Math.ceil(hist.length/2)+'. ':' ')+txt; L.scrollTop=1e6;
+  checkEnd();
+  try{Arcade.beep(r.cap?220:520,0.05)}catch(e){}
+}
+function checkEnd(){
+  const ms=legal(bd,turn,castle,ep);
+  if(!ms.length){ over=true;
+    status(inCheck(bd,turn) ? (turn==='w'?'Jaque mate — ganan las negras':'¡Jaque mate! ¡Ganas!') : 'Tablas por ahogado'); }
+  else status(inCheck(bd,turn)?'¡Jaque!':'');
+}
+function status(s){ const e=document.getElementById('state'); e.textContent=s; e.style.color=s?'#ffd166':''; }
+function undo(){ if(hist.length<2)return; for(let k=0;k<2&&hist.length;k++){ const h=hist.pop(); bd=h.b;castle=h.cs;ep=h.ep;turn=h.turn; } over=false; sel=null; status(''); draw(); }
+function setLevel(){ level = level>=3?1:level+1; draw(); }
+function flip(){ flipped=!flipped; draw(); }
+newGame();
+</script>
+<script src="../assets/arcade.js"></script>
+</body></html>

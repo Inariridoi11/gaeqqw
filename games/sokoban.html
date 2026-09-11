@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📦 Sokoban</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>📦 Sokoban</h1></header><main>
+<div class="hud"><span>Nivel <b id="n">1</b>/8</span><span>Movs <b id="m">0</b></span><span id="st"></span></div>
+<canvas id="c" width="520" height="440"></canvas>
+<div class="row"><button class="btn" onclick="load(lvl)">Reiniciar nivel</button><button class="btn" onclick="load(lvl-1)">◀</button><button class="btn" onclick="load(lvl+1)">▶</button><button class="btn" onclick="undo()">Deshacer</button></div>
+<p class="help">Flechas/WASD. Empuja todas las cajas 📦 a los objetivos ⭕. U = deshacer.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const LV=[
+["#######","#     #","# $   #","#  $  #","#  .. #","#@    #","#######"],
+["########","#      #","# $$   #","#  #   #","#@ ..  #","#      #","########"],
+["########","#  #   #","# $    #","# $#   #","#@ ..  #","#      #","########"],
+["#########","#       #","# $ $ $ #","#       #","# . . . #","#@      #","#########"],
+["#######","#     #","# $$$ #","#     #","# ... #","#@    #","#######"],
+["########","#      #","# $  $ #","#  ##  #","#@  .  #","# .    #","#      #","########"],
+["#########","#   #   #","# $ $ $ #","#  ###  #","#@      #","# ..  . #","#########"],
+["########","#      #","# $  $ #","#  ..  #","# $  $ #","#  ..  #","#@     #","########"]];
+const c=document.getElementById('c'),x=c.getContext('2d');
+let lvl=0,grid,goals,px,py,moves,hist;
+function load(n){ lvl=(n+LV.length)%LV.length;
+ const raw=LV[lvl].map(r=>r.split(''));
+ grid=raw.map(r=>r.map(ch=>ch==='#'?'#':ch==='$'?'$':'.'));
+ goals=[];raw.forEach((r,y)=>r.forEach((ch,X)=>{if(ch==='.')goals.push(y*100+X);if(ch==='@'){px=X;py=y;}}));
+ moves=0;hist=[];draw();}
+function box(y,X){return grid[y]&&grid[y][X]==='$';}
+function wall(y,X){return !grid[y]||!grid[y][X]||grid[y][X]==='#';}
+function mv(dx,dy){
+ const nx=px+dx,ny=py+dy;
+ if(wall(ny,nx))return;
+ if(box(ny,nx)){ const bx=nx+dx,by=ny+dy;
+  if(wall(by,bx)||box(by,bx))return;
+  hist.push({g:grid.map(r=>r.slice()),px,py});
+  grid[ny][nx]='.';grid[by][bx]='$';Arcade.beep(300,.05);}
+ else hist.push({g:grid.map(r=>r.slice()),px,py});
+ px=nx;py=ny;moves++;draw();
+ if(goals.every(g=>box(g/100|0,g%100))){document.getElementById('st').textContent='🎉 ¡Nivel resuelto!';Arcade.beep(1100,.3);
+  setTimeout(()=>load(lvl+1),1100);}}
+function undo(){const h=hist.pop();if(!h)return;grid=h.g;px=h.px;py=h.py;moves--;draw();}
+addEventListener('keydown',e=>{const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+ if(m[e.key]){mv(...m[e.key]);e.preventDefault();} if(e.key==='u'||e.key==='U')undo();});
+function draw(){const S=Math.min(520/grid[0].length,440/grid.length)|0;
+ x.fillStyle='#0b0d14';x.fillRect(0,0,520,440);
+ const ox=(520-S*grid[0].length)/2, oy=(440-S*grid.length)/2;
+ for(let y=0;y<grid.length;y++)for(let X=0;X<grid[y].length;X++){
+  const gx=ox+X*S,gy=oy+y*S, isG=goals.includes(y*100+X);
+  if(grid[y][X]==='#'){x.fillStyle='#39405e';x.fillRect(gx,gy,S,S);x.fillStyle='#4c557a';x.fillRect(gx+2,gy+2,S-4,S-4);}
+  else{x.fillStyle='#141a28';x.fillRect(gx,gy,S,S);}
+  if(isG){x.strokeStyle='#5ee0a0';x.lineWidth=3;x.beginPath();x.arc(gx+S/2,gy+S/2,S/5,0,7);x.stroke();}
+  if(grid[y][X]==='$'){x.fillStyle=isG?'#3fbf85':'#e89a4a';x.fillRect(gx+5,gy+5,S-10,S-10);
+   x.strokeStyle='#00000055';x.lineWidth=2;x.strokeRect(gx+9,gy+9,S-18,S-18);} }
+ x.fillStyle='#7aa2ff';x.beginPath();x.arc(ox+px*S+S/2,oy+py*S+S/2,S/2.7,0,7);x.fill();
+ x.fillStyle='#0b0d14';x.fillRect(ox+px*S+S/2-7,oy+py*S+S/2-4,4,4);x.fillRect(ox+px*S+S/2+3,oy+py*S+S/2-4,4,4);
+ document.getElementById('n').textContent=lvl+1;document.getElementById('m').textContent=moves;
+ if(!goals.every(g=>box(g/100|0,g%100)))document.getElementById('st').textContent='';}
+load(0);</script></body></html>

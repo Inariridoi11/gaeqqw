@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>👻 Pac-Man</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>👻 Pac-Man</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vidas <b id="v">3</b></span><span>Nivel <b id="n">1</b></span><span id="st"></span></div>
+<canvas id="c" width="486" height="450"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Flechas o WASD. Come todos los puntos; las píldoras grandes te dejan comer fantasmas.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const RAW=[
+"###########################",
+"#............#............#",
+"#.####.#####.#.#####.####.#",
+"#o####.#####.#.#####.####o#",
+"#.####.#####.#.#####.####.#",
+"#.........................#",
+"#.####.##.#######.##.####.#",
+"#.####.##.#######.##.####.#",
+"#......##....#....##......#",
+"######.##### # #####.######",
+"######.##         ##.######",
+"######.## ##---## ##.######",
+"######.## #     # ##.######",
+"######.## #     # ##.######",
+"######.## ####### ##.######",
+"######.##         ##.######",
+"######.## ####### ##.######",
+"#............#............#",
+"#.####.#####.#.#####.####.#",
+"#o..##.......P.......##..o#",
+"###.##.##.#######.##.##.###",
+"#......##....#....##......#",
+"#.##########.#.##########.#",
+"#.........................#",
+"###########################"];
+const c=document.getElementById('c'),x=c.getContext('2d'),S=18;
+let grid,pac,ghosts,score,lives,lvl,fright,dots,dead,win,k={};
+function init(){lvl=1;score=0;lives=3;load();}
+function load(){grid=RAW.map(r=>r.padEnd(27,'#').split(''));
+ pac={x:13,y:19,px:13,py:19,dir:[0,0],nd:[0,0],mv:0};
+ grid[19][13]='.';
+ dots=0;grid.forEach(r=>r.forEach(ch=>{if(ch==='.'||ch==='o')dots++;}));
+ const G=[['#ff6b6b',13,11],['#ff9ed2',13,13],['#4fd6e0',12,13],['#e89a4a',14,13]];
+ ghosts=G.map(([col,gx,gy],i)=>({col,x:gx,y:gy,px:gx,py:gy,dir:[0,-1],mv:0,home:i*1.2,eaten:0}));
+ fright=0;dead=0;win=0;}
+addEventListener('keydown',e=>{const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+ if(m[e.key]){pac.nd=m[e.key];e.preventDefault();} if(e.key===' '&&(dead||win))init();});
+let tsx,tsy;c.ontouchstart=e=>{tsx=e.touches[0].clientX;tsy=e.touches[0].clientY;};
+c.ontouchend=e=>{const dx=e.changedTouches[0].clientX-tsx,dy=e.changedTouches[0].clientY-tsy;
+ pac.nd=Math.abs(dx)>Math.abs(dy)?[dx>0?1:-1,0]:[0,dy>0?1:-1];};
+function wall(x,y){ if(y<0||y>=grid.length)return true; x=(x+27)%27; return '#-'.includes(grid[y][x]); }
+function gwall(x,y){ if(y<0||y>=grid.length)return true; x=(x+27)%27; return grid[y][x]==='#'; }
+function move(e,speed,dt){
+ e.mv+=speed*dt;
+ if(e.mv>=1){ e.mv=0; e.px=e.x;e.py=e.y;
+  if(e===pac){ if(!wall(pac.x+pac.nd[0],pac.y+pac.nd[1]))pac.dir=pac.nd;
+   if(!wall(pac.x+pac.dir[0],pac.y+pac.dir[1])){pac.x=(pac.x+pac.dir[0]+27)%27;pac.y+=pac.dir[1];} }
+  return true; }
+ return false;}
+function ghostAI(g){
+ const opts=[[1,0],[-1,0],[0,1],[0,-1]].filter(d=>!gwall(g.x+d[0],g.y+d[1])&&!(d[0]===-g.dir[0]&&d[1]===-g.dir[1]));
+ const list=opts.length?opts:[[-g.dir[0],-g.dir[1]]];
+ let tx=pac.x,ty=pac.y;
+ if(g.eaten){tx=13;ty=13;} else if(fright>0){tx=27-pac.x;ty=25-pac.y;}
+ let best=list[0],bd=1e9;
+ for(const d of list){const nx=g.x+d[0],ny=g.y+d[1],dd=Math.hypot(nx-tx,ny-ty)+(Math.random()*(fright>0?6:1.2));
+  if(dd<bd){bd=dd;best=d;}}
+ g.dir=best;g.x=(g.x+best[0]+27)%27;g.y+=best[1];
+ if(g.eaten&&Math.abs(g.x-13)<2&&Math.abs(g.y-13)<2)g.eaten=0;}
+Arcade.loop(dt=>{
+ if(!dead&&!win){
+  move(pac,7+lvl*0.3,dt);
+  const ch=grid[pac.y][pac.x];
+  if(ch==='.'){grid[pac.y][pac.x]=' ';score+=10;dots--;Arcade.beep(520,.02);}
+  if(ch==='o'){grid[pac.y][pac.x]=' ';score+=50;dots--;fright=7;Arcade.beep(200,.2);}
+  if(dots<=0){win=1;lvl++;score+=500;setTimeout(load,900);}
+  if(fright>0)fright-=dt;
+  for(const g of ghosts){ if(g.home>0){g.home-=dt;continue;}
+   g.mv+=(g.eaten?11:(fright>0?4.2:5.6+lvl*.25))*dt;
+   if(g.mv>=1){g.mv=0;g.px=g.x;g.py=g.y;ghostAI(g);}
+   if(g.x===pac.x&&g.y===pac.y&&!g.eaten){
+    if(fright>0){g.eaten=1;score+=200;Arcade.beep(1000,.15);}
+    else{lives--;Arcade.beep(100,.4);
+     if(lives<=0)dead=1; else {pac.x=13;pac.y=19;ghosts.forEach((q,i)=>{q.x=13;q.y=13;q.home=i*.8;});}}}
+  }
+ }
+ x.fillStyle='#05060a';x.fillRect(0,0,486,450);
+ for(let y=0;y<grid.length;y++)for(let a=0;a<27;a++){const ch=grid[y][a];
+  if(ch==='#'){x.fillStyle='#2036a0';x.fillRect(a*S+2,y*S+2,S-4,S-4);}
+  else if(ch==='-'){x.fillStyle='#ff9ed2';x.fillRect(a*S+2,y*S+S/2-2,S-4,4);}
+  else if(ch==='.'){x.fillStyle='#ffe0a0';x.fillRect(a*S+S/2-2,y*S+S/2-2,4,4);}
+  else if(ch==='o'){x.fillStyle='#ffe0a0';x.beginPath();x.arc(a*S+S/2,y*S+S/2,5.5,0,7);x.fill();}}
+ const ix=(e)=>((e.px+(e.x-e.px>13?e.px+1-e.px:(e.x-e.px<-13?-1:e.x-e.px))*e.mv)),
+       iy=(e)=>e.py+(e.y-e.py)*e.mv;
+ const pxx=(Math.abs(pac.x-pac.px)>2?pac.x:ix(pac))*S+S/2, pyy=iy(pac)*S+S/2;
+ x.fillStyle='#ffe23d';x.beginPath();
+ const ang=Math.abs(Math.sin(performance.now()/90))*0.32, base=Math.atan2(pac.dir[1],pac.dir[0]);
+ x.arc(pxx,pyy,S/2-1,base+ang,base-ang);x.lineTo(pxx,pyy);x.fill();
+ for(const g of ghosts){ if(g.home>0)continue;
+  const gx=(Math.abs(g.x-g.px)>2?g.x:ix(g))*S+S/2, gy=iy(g)*S+S/2;
+  x.fillStyle=g.eaten?'#39405e':(fright>1||(fright>0&&(performance.now()/150|0)%2)?'#3355ff':g.col);
+  x.beginPath();x.arc(gx,gy-2,S/2-1,Math.PI,0);x.rect(gx-S/2+1,gy-2,S-2,S/2);x.fill();
+  x.fillStyle='#fff';x.beginPath();x.arc(gx-4,gy-3,3,0,7);x.arc(gx+4,gy-3,3,0,7);x.fill();
+  x.fillStyle='#111';x.beginPath();x.arc(gx-4+g.dir[0]*1.5,gy-3+g.dir[1]*1.5,1.5,0,7);x.arc(gx+4+g.dir[0]*1.5,gy-3+g.dir[1]*1.5,1.5,0,7);x.fill();}
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,486,450);x.fillStyle='#ff6b6b';x.font='bold 28px monospace';x.textAlign='center';
+  x.fillText('GAME OVER',243,215);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO = reiniciar',243,245);x.textAlign='left';}
+ s.textContent=score;v.textContent=lives;n.textContent=lvl;
+ st.textContent=fright>0?'👻 ¡Cómetelos!':'';});
+init();</script></body></html>

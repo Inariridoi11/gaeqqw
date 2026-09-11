@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🍉 Corta frutas</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🍉 Corta frutas</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vidas <b id="v">3</b></span><span>Combo <b id="cb">0</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="640" height="460"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Arrastra el ratón o el dedo para cortar. ¡No toques las bombas 💣!</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+const F=['🍉','🍎','🍊','🍋','🍇','🍓','🥝','🍑'];
+let objs,trail,score,lives,combo,dead,spawn;
+function init(){objs=[];trail=[];score=0;lives=3;combo=0;dead=0;spawn=0;}
+function at(e){const r=c.getBoundingClientRect();const p=e.touches?e.touches[0]:e;
+ return {x:(p.clientX-r.left)*(640/r.width),y:(p.clientY-r.top)*(460/r.height)};}
+function mv(e){ if(dead)return; const p=at(e);
+ trail.push({...p,t:.28});
+ for(const o of objs){ if(o.cut)continue;
+  if(Math.hypot(o.x-p.x,o.y-p.y)<34){
+   o.cut=1;
+   if(o.bomb){lives--;combo=0;Arcade.beep(110,.4);if(lives<=0)dead=1;}
+   else{combo++;score+=10*Math.max(1,combo);Arcade.beep(700+combo*40,.06);}}}
+ e.preventDefault&&e.preventDefault();}
+c.addEventListener('mousemove',e=>{if(e.buttons)mv(e);});
+c.addEventListener('touchmove',mv);
+c.addEventListener('click',e=>{if(dead)init();});
+Arcade.loop(dt=>{
+ if(!dead){
+  spawn-=dt;
+  if(spawn<=0){spawn=.55+Math.random()*.5;
+   const n=1+(Math.random()*2|0);
+   for(let i=0;i<n;i++){const bomb=Math.random()<.16;
+    objs.push({x:60+Math.random()*520,y:480,vx:(320-Math.random()*640)*.35,vy:-(520+Math.random()*180),
+     bomb,e:bomb?'💣':F[Math.random()*F.length|0],rot:Math.random()*7,vr:Math.random()*4-2});}}
+  for(const o of objs){o.vy+=760*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;o.rot+=o.vr*dt;
+   if(o.y>520&&!o.cut&&!o.bomb){o.cut=1;o.missed=1;combo=0;lives--;Arcade.beep(200,.2);if(lives<=0)dead=1;}}
+  objs=objs.filter(o=>o.y<560);
+  for(const t of trail)t.t-=dt; trail=trail.filter(t=>t.t>0);
+  if(combo>0&&!objs.some(o=>!o.cut))combo=Math.max(0,combo-0);
+ }
+ x.fillStyle='#140f1e';x.fillRect(0,0,640,460);
+ const g=x.createRadialGradient(320,230,40,320,230,380);
+ g.addColorStop(0,'#1d1630');g.addColorStop(1,'#0c0913');x.fillStyle=g;x.fillRect(0,0,640,460);
+ for(const o of objs){ x.save();x.translate(o.x,o.y);x.rotate(o.rot);
+  x.font='46px serif';x.textAlign='center';
+  x.globalAlpha=o.cut?.35:1;
+  x.fillText(o.e,0,16);x.restore();x.globalAlpha=1;}
+ x.strokeStyle='#ffffffcc';x.lineWidth=4;x.lineCap='round';x.beginPath();
+ trail.forEach((t,i)=>i?x.lineTo(t.x,t.y):x.moveTo(t.x,t.y));x.stroke();
+ if(dead){x.fillStyle='rgba(0,0,0,.78)';x.fillRect(0,0,640,460);x.fillStyle='#ff6b6b';x.font='bold 28px monospace';x.textAlign='center';
+  x.fillText('GAME OVER',320,220);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('Haz clic para reiniciar',320,250);x.textAlign='left';}
+ s.textContent=score;v.textContent=Math.max(0,lives);cb.textContent=combo;b.textContent=Arcade.best('fruit',score);});
+init();</script></body></html>

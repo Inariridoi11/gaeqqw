@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔎 Sopa de letras</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🔎 Sopa de letras</h1></header><main>
+<style>#g{display:grid;gap:1px;background:#26304a;padding:3px;border-radius:6px;user-select:none}
+.cl{width:clamp(20px,4.6vw,32px);aspect-ratio:1;background:#141a28;display:flex;align-items:center;justify-content:center;font-size:clamp(11px,2.6vw,16px);cursor:pointer}
+.sel{background:#3a4a7a}.found{background:#1f5e42;color:#cfe9dc}
+#words{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px;font-size:13px}
+.done{text-decoration:line-through;color:var(--dim)}</style>
+<div class="hud"><span>Encontradas <b id="f">0</b>/<b id="tot">8</b></span><span>Tiempo <b id="t">0</b>s</span><span id="st"></span></div>
+<div id="g"></div><div id="words"></div>
+<div class="row" style="margin-top:12px"><button class="btn" onclick="init()">Nueva sopa</button></div>
+<p class="help">Arrastra (o clic inicio + clic final) sobre las letras para marcar una palabra.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const POOL=[["GATO","PERRO","LEON","TIGRE","ZORRO","LOBO","OSO","RANA"],
+["ROJO","VERDE","AZUL","NEGRO","BLANCO","GRIS","ROSA","VIOLETA"],
+["ESPANA","FRANCIA","ITALIA","CHILE","PERU","CUBA","BRASIL","MEXICO"],
+["PIANO","VIOLIN","FLAUTA","ARPA","TAMBOR","GUITARRA","TROMPA","OBOE"]];
+const N=12;let grid,words,found,sel,start,t0,timer;
+function init(){words=POOL[Math.random()*POOL.length|0].slice(0,8);
+ grid=Array.from({length:N},()=>Array(N).fill(''));
+ found=[];sel=[];start=null;
+ const DIRS=[[0,1],[1,0],[1,1],[-1,1],[0,-1],[-1,0]];
+ for(const w of words){ let placed=0;
+  for(let tries=0;tries<300&&!placed;tries++){
+   const [dr,dc]=DIRS[Math.random()*DIRS.length|0];
+   const r=Math.random()*N|0,c=Math.random()*N|0;
+   const er=r+dr*(w.length-1),ec=c+dc*(w.length-1);
+   if(er<0||ec<0||er>=N||ec>=N)continue;
+   let ok=1;
+   for(let i=0;i<w.length;i++){const g=grid[r+dr*i][c+dc*i];if(g&&g!==w[i]){ok=0;break;}}
+   if(!ok)continue;
+   for(let i=0;i<w.length;i++)grid[r+dr*i][c+dc*i]=w[i];
+   placed=1;}}
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!grid[r][c])grid[r][c]='ABCDEFGHIJKLMNOPRSTUVZ'[Math.random()*22|0];
+ clearInterval(timer);t0=Date.now();timer=setInterval(()=>document.getElementById('t').textContent=Math.floor((Date.now()-t0)/1000),500);
+ document.getElementById('tot').textContent=words.length;document.getElementById('st').textContent='';
+ draw();}
+function cellsBetween(a,b){
+ const dr=Math.sign(b[0]-a[0]),dc=Math.sign(b[1]-a[1]);
+ const len=Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]))+1;
+ if(a[0]!==b[0]&&a[1]!==b[1]&&Math.abs(b[0]-a[0])!==Math.abs(b[1]-a[1]))return null;
+ const out=[];for(let i=0;i<len;i++)out.push([a[0]+dr*i,a[1]+dc*i]);return out;}
+function click(r,c){
+ if(!start){start=[r,c];sel=[[r,c]];draw();return;}
+ const line=cellsBetween(start,[r,c]);
+ start=null;
+ if(!line){sel=[];draw();return;}
+ const str=line.map(([a,b])=>grid[a][b]).join('');
+ const rev=str.split('').reverse().join('');
+ const w=words.find(w=>(w===str||w===rev)&&!found.includes(w));
+ if(w){found.push(w);line.forEach(([a,b])=>grid[a][b]={l:grid[a][b],f:1});Arcade.beep(1000,.12);
+  if(found.length===words.length){clearInterval(timer);document.getElementById('st').textContent='🏆 ¡Completada!';}}
+ else Arcade.beep(200,.1);
+ sel=[];draw();}
+function draw(){const g=document.getElementById('g');
+ g.style.gridTemplateColumns='repeat('+N+',auto)';g.innerHTML='';
+ for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+  const v=grid[r][c],d=document.createElement('div');
+  d.className='cl'+(typeof v==='object'?' found':'')+(sel.some(([a,b])=>a===r&&b===c)?' sel':'');
+  d.textContent=typeof v==='object'?v.l:v;
+  d.onclick=()=>click(r,c);g.appendChild(d);}
+ const W=document.getElementById('words');W.innerHTML='';
+ words.forEach(w=>{const s=document.createElement('span');
+  s.className=found.includes(w)?'done':'';s.textContent=w;W.appendChild(s);});
+ document.getElementById('f').textContent=found.length;}
+init();</script></body></html>

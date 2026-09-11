@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚡ Test de reflejos</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>⚡ Test de reflejos</h1></header><main>
+<style>#z{width:min(92vw,600px);height:320px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;background:#182033;border:2px solid var(--line);text-align:center;padding:20px}
+.wait{background:#5a2020!important}.go{background:#123a2a!important}</style>
+<div class="hud"><span>Último <b id="l">—</b></span><span>Mejor <b id="b">—</b></span><span>Media <b id="a">—</b></span><span>Intentos <b id="n">0</b></span></div>
+<div id="z">Haz clic para empezar</div>
+<div class="row"><button class="btn" onclick="hist=[];upd()">Borrar historial</button></div>
+<p class="help">Espera a que se ponga verde y haz clic lo más rápido posible. Si te adelantas, penaliza.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const z=document.getElementById('z');let state='idle',t0,to,hist=[];
+z.onclick=()=>{
+ if(state==='idle'){state='wait';z.className='wait';z.textContent='Espera al verde…';
+  to=setTimeout(()=>{state='go';z.className='go';z.textContent='¡YA!';t0=performance.now();Arcade.beep(900,.05);},1200+Math.random()*3000);}
+ else if(state==='wait'){clearTimeout(to);state='idle';z.className='';z.textContent='❌ ¡Demasiado pronto! Clic para reintentar';Arcade.beep(150,.25);}
+ else{const ms=Math.round(performance.now()-t0);hist.push(ms);state='idle';z.className='';
+  z.textContent=ms+' ms — clic para otra';Arcade.beep(1000,.06);upd();}};
+function upd(){document.getElementById('l').textContent=hist.length?hist[hist.length-1]+' ms':'—';
+ document.getElementById('b').textContent=hist.length?Math.min(...hist)+' ms':'—';
+ document.getElementById('a').textContent=hist.length?Math.round(hist.reduce((a,b)=>a+b,0)/hist.length)+' ms':'—';
+ document.getElementById('n').textContent=hist.length;}
+</script></body></html>

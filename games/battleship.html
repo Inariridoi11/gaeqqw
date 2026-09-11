@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🚢 Hundir la flota</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🚢 Hundir la flota</h1></header><main>
+<style>.gr{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:min(44vw,300px)}
+.cl{aspect-ratio:1;background:#16233d;border-radius:3px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.ship{background:#4a5573}.hit{background:#ff6b6b}.miss{background:#232a3d;color:#5c6785}.sunk{background:#8a2b2b}
+#boards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+h3{font-size:13px;color:var(--dim);text-align:center;margin:6px 0}</style>
+<div class="hud"><span>Tus barcos <b id="a">5</b></span><span>Enemigos <b id="b">5</b></span><span>Disparos <b id="sh">0</b></span><span id="st"></span></div>
+<div id="boards">
+ <div><h3>TU FLOTA</h3><div class="gr" id="mine"></div></div>
+ <div><h3>ENEMIGO (dispara aquí)</h3><div class="gr" id="foe"></div></div>
+</div>
+<div class="row" style="margin-top:12px"><button class="btn" onclick="init()">Nueva partida</button></div>
+<p class="help">Hunde los 5 barcos enemigos antes de que la IA hunda los tuyos. La IA remata inteligentemente los impactos.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const SH=[5,4,3,3,2];
+let me,foe,shots,over,aiQueue,aiTried;
+function mkBoard(){const b={cells:Array(100).fill(0),ships:[]};
+ SH.forEach((len,id)=>{ for(;;){ const h=Math.random()<.5, r=Math.random()*10|0,c=Math.random()*10|0;
+   const idx=[];let ok=1;
+   for(let i=0;i<len;i++){const rr=h?r:r+i,cc=h?c+i:c;
+    if(rr>9||cc>9){ok=0;break;} idx.push(rr*10+cc);}
+   if(!ok)continue;
+   if(idx.some(i=>b.cells[i]))continue;
+   idx.forEach(i=>b.cells[i]=id+1); b.ships.push({id:id+1,idx,hits:0,len}); break; } });
+ b.shot=Array(100).fill(0); return b;}
+function init(){me=mkBoard();foe=mkBoard();shots=0;over=0;aiQueue=[];aiTried=new Set();
+ document.getElementById('st').textContent='';draw();}
+function fire(i){ if(over||foe.shot[i])return;
+ foe.shot[i]=1;shots++;
+ const s=foe.ships.find(s=>s.idx.includes(i));
+ if(s){s.hits++;Arcade.beep(240,.15);if(s.hits===s.len)Arcade.beep(120,.3);}
+ else Arcade.beep(700,.05);
+ if(foe.ships.every(s=>s.hits===s.len)){over=1;document.getElementById('st').textContent='🏆 ¡Flota enemiga hundida!';draw();return;}
+ setTimeout(aiTurn,350);}
+function aiTurn(){ if(over)return;
+ let i;
+ while(true){
+  if(aiQueue.length)i=aiQueue.shift();
+  else { // tablero de damas para buscar
+   const cand=[];for(let j=0;j<100;j++)if(!me.shot[j]&&((j/10|0)+j%10)%2===0)cand.push(j);
+   const pool=cand.length?cand:[...Array(100).keys()].filter(j=>!me.shot[j]);
+   if(!pool.length)return; i=pool[Math.random()*pool.length|0];}
+  if(i!==undefined&&!me.shot[i])break;
+  if(!aiQueue.length&&me.shot.every(v=>v))return;}
+ me.shot[i]=1;
+ const s=me.ships.find(s=>s.idx.includes(i));
+ if(s){s.hits++;Arcade.beep(200,.2);
+  const r=i/10|0,c=i%10;
+  for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0]]){const rr=r+dr,cc=c+dc;
+   if(rr>=0&&rr<10&&cc>=0&&cc<10&&!me.shot[rr*10+cc])aiQueue.push(rr*10+cc);}}
+ if(me.ships.every(s=>s.hits===s.len)){over=1;document.getElementById('st').textContent='💀 Tu flota fue hundida';}
+ draw();}
+function draw(){
+ const M=document.getElementById('mine'),F=document.getElementById('foe');
+ M.innerHTML='';F.innerHTML='';
+ for(let i=0;i<100;i++){
+  const d=document.createElement('div');d.className='cl';
+  const s=me.ships.find(s=>s.idx.includes(i));
+  if(me.shot[i]) d.className+=s?(s.hits===s.len?' sunk':' hit'):' miss', d.textContent=s?'✖':'·';
+  else if(s)d.className+=' ship';
+  M.appendChild(d);
+  const e=document.createElement('div');e.className='cl';
+  const fs=foe.ships.find(s=>s.idx.includes(i));
+  if(foe.shot[i]) e.className+=fs?(fs.hits===fs.len?' sunk':' hit'):' miss', e.textContent=fs?'💥':'·';
+  else e.onclick=()=>fire(i);
+  F.appendChild(e);}
+ document.getElementById('a').textContent=me.ships.filter(s=>s.hits<s.len).length;
+ document.getElementById('b').textContent=foe.ships.filter(s=>s.hits<s.len).length;
+ document.getElementById('sh').textContent=shots;}
+init();</script></body></html>

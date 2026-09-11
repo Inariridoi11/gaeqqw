@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎰 Pinball</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🎰 Pinball</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Bolas <b id="v">3</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="420" height="620"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Z/← y M/→ para las palas. ESPACIO (mantenido) para lanzar la bola.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),X=c.getContext('2d');
+let ball,score,balls,fl,fr,power,launched,bump,k={};
+function init(){score=0;balls=3;reset();
+ bump=[{x:130,y:170,r:24},{x:290,y:170,r:24},{x:210,y:250,r:26},{x:110,y:320,r:20},{x:310,y:320,r:20}];}
+function reset(){ball={x:398,y:560,vx:0,vy:0};power=0;launched=0;fl=0;fr=0;}
+addEventListener('keydown',e=>{k[e.key.toLowerCase()]=k[e.code]=1;if(e.code==='Space')e.preventDefault();});
+addEventListener('keyup',e=>{
+ if(e.code==='Space'&&!launched){ball.vy=-(300+power*9);ball.vx=-30;launched=1;power=0;Arcade.beep(400,.15);}
+ k[e.key.toLowerCase()]=k[e.code]=0;});
+Arcade.loop(dt=>{
+ fl=(k.z||k.arrowleft)?1:0; fr=(k.m||k.arrowright)?1:0;
+ if(!launched){ if(k.Space||k[' '])power=Math.min(50,power+60*dt); ball.x=398;ball.y=560; }
+ else{
+  ball.vy+=520*dt; ball.x+=ball.vx*dt; ball.y+=ball.vy*dt;
+  if(ball.x<14){ball.x=14;ball.vx*=-.8;} if(ball.x>406){ball.x=406;ball.vx*=-.8;}
+  if(ball.y<14){ball.y=14;ball.vy*=-.8;}
+  if(ball.x>384&&ball.y<520&&ball.vy<0)ball.x=384;
+  for(const b of bump){const d=Math.hypot(ball.x-b.x,ball.y-b.y);
+   if(d<b.r+9){const a=Math.atan2(ball.y-b.y,ball.x-b.x);
+    ball.x=b.x+Math.cos(a)*(b.r+9);ball.y=b.y+Math.sin(a)*(b.r+9);
+    const sp=Math.max(300,Math.hypot(ball.vx,ball.vy)*1.05);
+    ball.vx=Math.cos(a)*sp;ball.vy=Math.sin(a)*sp;score+=100;Arcade.beep(900,.06);}}
+  // palas
+  const flips=[{x:70,y:540,d:1,up:fl},{x:280,y:540,d:-1,up:fr}];
+  for(const f of flips){
+   const ang=f.up?-0.5*f.d:0.42*f.d;
+   const ex=f.x+Math.cos(ang)*70*f.d, ey=f.y+Math.sin(ang)*70;
+   const dx=ex-f.x,dy=ey-f.y,L=Math.hypot(dx,dy);
+   const t=Math.max(0,Math.min(1,((ball.x-f.x)*dx+(ball.y-f.y)*dy)/(L*L)));
+   const cxx=f.x+dx*t,cyy=f.y+dy*t;
+   if(Math.hypot(ball.x-cxx,ball.y-cyy)<13){
+    const a=Math.atan2(ball.y-cyy,ball.x-cxx);
+    ball.x=cxx+Math.cos(a)*13;ball.y=cyy+Math.sin(a)*13;
+    const sp=f.up?520:Math.max(220,Math.hypot(ball.vx,ball.vy)*.9);
+    ball.vx=Math.cos(a)*sp;ball.vy=Math.sin(a)*sp-(f.up?180:0);
+    score+=10;Arcade.beep(500,.05);}}
+  if(ball.y>640){balls--;Arcade.beep(140,.35);
+   if(balls<=0){document.getElementById('b').textContent=Arcade.best('pinball',score);}
+   reset();}
+ }
+ X.fillStyle='#0d1020';X.fillRect(0,0,420,620);
+ X.fillStyle='#161c33';X.fillRect(384,80,26,540);
+ X.strokeStyle='#2b3450';X.lineWidth=8;X.strokeRect(4,4,412,612);
+ for(const b of bump){X.fillStyle='#7aa2ff';X.beginPath();X.arc(b.x,b.y,b.r,0,7);X.fill();
+  X.fillStyle='#b7cbff';X.beginPath();X.arc(b.x,b.y,b.r*.55,0,7);X.fill();}
+ X.strokeStyle='#5ee0a0';X.lineWidth=13;X.lineCap='round';
+ for(const f of [{x:70,y:540,d:1,up:fl},{x:280,y:540,d:-1,up:fr}]){
+  const ang=f.up?-0.5*f.d:0.42*f.d;
+  X.beginPath();X.moveTo(f.x,f.y);X.lineTo(f.x+Math.cos(ang)*70*f.d,f.y+Math.sin(ang)*70);X.stroke();}
+ X.fillStyle='#e8ecf7';X.beginPath();X.arc(ball.x,ball.y,9,0,7);X.fill();
+ if(!launched){X.fillStyle='#ffd166';X.fillRect(392,600-power*1.6,16,power*1.6);
+  X.fillStyle='#94a0bd';X.font='11px monospace';X.fillText('ESPACIO',330,600);}
+ X.fillStyle='#94a0bd';X.font='12px monospace';X.fillText('Bolas: '+balls,14,30);
+ s.textContent=score;v.textContent=balls;b.textContent=Arcade.best('pinball',score);});
+init();</script></body></html>

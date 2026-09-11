@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⛳ Minigolf</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>⛳ Minigolf</h1></header><main>
+<div class="hud"><span>Hoyo <b id="h">1</b>/9</span><span>Golpes <b id="g">0</b></span><span>Total <b id="tt">0</b></span><span>Par <b id="pr">3</b></span></div>
+<canvas id="c" width="640" height="440"></canvas>
+<div class="row"><button class="btn" onclick="load(hole)">Repetir hoyo</button><button class="btn" onclick="load(hole+1)">Siguiente ▶</button><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Arrastra desde la bola para apuntar y soltar. Menos golpes = mejor.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+const HOLES=[
+ {s:[80,220],h:[560,220],par:2,w:[]},
+ {s:[80,350],h:[560,90],par:3,w:[[300,140,24,300]]},
+ {s:[70,220],h:[570,220],par:3,w:[[250,0,24,280],[390,180,24,280]]},
+ {s:[80,90],h:[560,360],par:4,w:[[200,0,24,300],[340,160,24,300],[470,0,24,280]]},
+ {s:[80,220],h:[560,220],par:3,w:[[300,0,24,160],[300,290,24,160]]},
+ {s:[90,380],h:[540,70],par:4,w:[[180,120,300,22],[260,260,300,22]]},
+ {s:[70,70],h:[570,380],par:4,w:[[170,0,22,330],[300,120,22,330],[440,0,22,330]]},
+ {s:[320,400],h:[320,60],par:3,w:[[150,180,160,22],[350,180,160,22]]},
+ {s:[70,220],h:[570,220],par:5,w:[[200,0,22,180],[200,260,22,180],[400,0,22,180],[400,260,22,180]]}];
+let hole=0,ball,vel,strokes,total,aim,dragging;
+function init(){total=0;load(0);}
+function load(n){hole=(n+HOLES.length)%HOLES.length;const H=HOLES[hole];
+ ball={x:H.s[0],y:H.s[1]};vel={x:0,y:0};strokes=0;aim=null;
+ document.getElementById('pr').textContent=H.par;upd();}
+function upd(){document.getElementById('h').textContent=hole+1;
+ document.getElementById('g').textContent=strokes;document.getElementById('tt').textContent=total;}
+function pos(e){const r=c.getBoundingClientRect();
+ const p=e.touches?e.touches[0]:e; return {x:(p.clientX-r.left)*(640/r.width),y:(p.clientY-r.top)*(440/r.height)};}
+function down(e){ if(Math.hypot(vel.x,vel.y)>4)return; const p=pos(e);
+ if(Math.hypot(p.x-ball.x,p.y-ball.y)<50){dragging=1;aim=p;} e.preventDefault();}
+function move(e){ if(dragging){aim=pos(e);e.preventDefault();} }
+function up(){ if(!dragging)return;dragging=0;
+ const dx=ball.x-aim.x,dy=ball.y-aim.y,d=Math.hypot(dx,dy);
+ if(d>6){vel.x=dx*3.2;vel.y=dy*3.2;strokes++;Arcade.beep(500,.07);upd();}
+ aim=null;}
+c.addEventListener('mousedown',down);c.addEventListener('mousemove',move);addEventListener('mouseup',up);
+c.addEventListener('touchstart',down);c.addEventListener('touchmove',move);addEventListener('touchend',up);
+Arcade.loop(dt=>{
+ const H=HOLES[hole];
+ ball.x+=vel.x*dt;ball.y+=vel.y*dt;
+ vel.x*=Math.pow(.35,dt);vel.y*=Math.pow(.35,dt);
+ if(Math.hypot(vel.x,vel.y)<5)vel.x=vel.y=0;
+ if(ball.x<14){ball.x=14;vel.x*=-.8;} if(ball.x>626){ball.x=626;vel.x*=-.8;}
+ if(ball.y<14){ball.y=14;vel.y*=-.8;} if(ball.y>426){ball.y=426;vel.y*=-.8;}
+ for(const w of H.w){const[wx,wy,ww,wh]=w;
+  if(ball.x+8>wx&&ball.x-8<wx+ww&&ball.y+8>wy&&ball.y-8<wy+wh){
+   const ox=Math.min(ball.x+8-wx,wx+ww-(ball.x-8)), oy=Math.min(ball.y+8-wy,wy+wh-(ball.y-8));
+   if(ox<oy){ball.x+=(ball.x<wx+ww/2?-ox:ox);vel.x*=-.7;}else{ball.y+=(ball.y<wy+wh/2?-oy:oy);vel.y*=-.7;}
+   Arcade.beep(300,.04);}}
+ if(Math.hypot(ball.x-H.h[0],ball.y-H.h[1])<15&&Math.hypot(vel.x,vel.y)<420){
+  total+=strokes;Arcade.beep(1100,.3);upd();
+  const par=H.par,d=strokes-par;
+  setTimeout(()=>{alert('Hoyo '+(hole+1)+': '+strokes+' golpes ('+(d===0?'PAR':d<0?(d===-1?'BIRDIE':'EAGLE'):'+'+d)+')');
+   load(hole+1);},120);
+  vel.x=vel.y=0;ball.x=-999;}
+ x.fillStyle='#153d24';x.fillRect(0,0,640,440);
+ x.fillStyle='#1c5231';for(let i=0;i<640;i+=40)for(let j=0;j<440;j+=40)if((i/40+j/40)%2)x.fillRect(i,j,40,40);
+ for(const w of H.w){x.fillStyle='#6b4c2a';x.fillRect(...w);x.fillStyle='#8a6437';x.fillRect(w[0],w[1],w[2],4);}
+ x.fillStyle='#000';x.beginPath();x.arc(H.h[0],H.h[1],14,0,7);x.fill();
+ x.fillStyle='#ff6b6b';x.fillRect(H.h[0]-1,H.h[1]-46,2,34);
+ x.beginPath();x.moveTo(H.h[0],H.h[1]-46);x.lineTo(H.h[0]+22,H.h[1]-39);x.lineTo(H.h[0],H.h[1]-32);x.fill();
+ if(ball.x>-100){x.fillStyle='#fff';x.beginPath();x.arc(ball.x,ball.y,8,0,7);x.fill();}
+ if(aim){x.strokeStyle='#ffd166';x.lineWidth=3;x.setLineDash([6,6]);
+  x.beginPath();x.moveTo(ball.x,ball.y);x.lineTo(ball.x+(ball.x-aim.x),ball.y+(ball.y-aim.y));x.stroke();x.setLineDash([]);}});
+init();</script></body></html>

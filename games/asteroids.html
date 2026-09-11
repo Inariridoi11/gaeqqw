@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🪨 Asteroids</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🪨 Asteroids</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vidas <b id="v">3</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="700" height="500"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">← → girar, ↑ propulsar, ESPACIO disparar, S hiperespacio.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),X=c.getContext('2d'),W=700,H=500;
+let sh,rocks,bul,score,lives,dead,k={},inv,cool,lvl;
+function init(){sh={x:350,y:250,a:-Math.PI/2,vx:0,vy:0};score=0;lives=3;dead=0;lvl=1;bul=[];inv=2;cool=0;spawn();}
+function spawn(){rocks=[];for(let i=0;i<3+lvl;i++)rocks.push(mk(3));}
+function mk(sz,x,y){const a=Math.random()*7;
+ return {x:x??Math.random()*W,y:y??Math.random()*H,vx:Math.cos(a)*(40+Math.random()*40)/sz*2,vy:Math.sin(a)*(40+Math.random()*40)/sz*2,
+  sz,r:sz*14,rot:Math.random()*.8-.4,ang:0,pts:Array.from({length:9},()=>0.7+Math.random()*0.5)};}
+addEventListener('keydown',e=>{k[e.key]=k[e.code]=1;if(e.code==='Space'){e.preventDefault();if(dead)init();}});
+addEventListener('keyup',e=>k[e.key]=k[e.code]=0);
+function wrap(o){o.x=(o.x+W)%W;o.y=(o.y+H)%H;}
+Arcade.loop(dt=>{
+ if(!dead){
+  if(k.ArrowLeft)sh.a-=3.4*dt; if(k.ArrowRight)sh.a+=3.4*dt;
+  if(k.ArrowUp){sh.vx+=Math.cos(sh.a)*260*dt;sh.vy+=Math.sin(sh.a)*260*dt;if(Math.random()<.3)Arcade.beep(90,.03,'sawtooth',.02);}
+  if(k.s||k.S){sh.x=Math.random()*W;sh.y=Math.random()*H;sh.vx=sh.vy=0;k.s=k.S=0;inv=1.5;}
+  sh.vx*=0.993;sh.vy*=0.993;sh.x+=sh.vx*dt;sh.y+=sh.vy*dt;wrap(sh);
+  cool-=dt; inv-=dt;
+  if((k.Space||k[' '])&&cool<=0){bul.push({x:sh.x,y:sh.y,vx:sh.vx+Math.cos(sh.a)*430,vy:sh.vy+Math.sin(sh.a)*430,t:1.3});cool=.22;Arcade.beep(900,.04);}
+  for(const b of bul){b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;wrap(b);}
+  bul=bul.filter(b=>b.t>0);
+  for(const r of rocks){r.x+=r.vx*dt;r.y+=r.vy*dt;r.ang+=r.rot*dt;wrap(r);}
+  for(const b of bul)for(let i=rocks.length-1;i>=0;i--){const r=rocks[i];
+   if(Math.hypot(b.x-r.x,b.y-r.y)<r.r){ b.t=0;score+=[0,100,50,20][r.sz];Arcade.beep(200,.08,'sawtooth');
+    rocks.splice(i,1); if(r.sz>1){rocks.push(mk(r.sz-1,r.x,r.y),mk(r.sz-1,r.x,r.y));} break;}}
+  if(inv<=0)for(const r of rocks)if(Math.hypot(sh.x-r.x,sh.y-r.y)<r.r+9){
+   lives--;inv=2.2;sh.x=350;sh.y=250;sh.vx=sh.vy=0;Arcade.beep(110,.35);if(lives<=0)dead=1;break;}
+  if(!rocks.length){lvl++;score+=300;spawn();}
+ }
+ X.fillStyle='#05060a';X.fillRect(0,0,W,H);
+ X.strokeStyle='#cbd5f0';X.lineWidth=2;
+ for(const r of rocks){X.beginPath();
+  r.pts.forEach((p,i)=>{const a=r.ang+i/r.pts.length*Math.PI*2;
+   const px=r.x+Math.cos(a)*r.r*p,py=r.y+Math.sin(a)*r.r*p; i?X.lineTo(px,py):X.moveTo(px,py);});
+  X.closePath();X.stroke();}
+ X.fillStyle='#ffe23d';for(const b of bul)X.fillRect(b.x-2,b.y-2,4,4);
+ if(inv<=0||(performance.now()/100|0)%2){
+  X.save();X.translate(sh.x,sh.y);X.rotate(sh.a);X.strokeStyle='#5ee0a0';X.beginPath();
+  X.moveTo(14,0);X.lineTo(-10,9);X.lineTo(-5,0);X.lineTo(-10,-9);X.closePath();X.stroke();
+  if(k.ArrowUp){X.strokeStyle='#ff9e4a';X.beginPath();X.moveTo(-6,4);X.lineTo(-16,0);X.lineTo(-6,-4);X.stroke();}
+  X.restore();}
+ if(dead){X.fillStyle='rgba(0,0,0,.75)';X.fillRect(0,0,W,H);X.fillStyle='#ff6b6b';X.font='bold 30px monospace';X.textAlign='center';
+  X.fillText('GAME OVER',350,240);X.font='13px monospace';X.fillStyle='#94a0bd';X.fillText('ESPACIO = reiniciar',350,272);X.textAlign='left';}
+ s.textContent=score;v.textContent=lives;b.textContent=Arcade.best('asteroids',score);});
+init();</script></body></html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚫ Damas</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>⚫ Damas</h1></header><main>
+<style>#b{display:grid;grid-template-columns:repeat(8,1fr);width:min(92vw,520px);aspect-ratio:1;border:2px solid var(--line);border-radius:8px;overflow:hidden}
+.s{display:flex;align-items:center;justify-content:center;position:relative}
+.lt{background:#e8ddc4}.dk{background:#7b5a3e}
+.p{width:74%;aspect-ratio:1;border-radius:50%;box-shadow:inset 0 -4px 6px rgba(0,0,0,.4)}
+.w{background:#f2f2f2}.bl{background:#2a2a2a}
+.k::after{content:'♔';position:absolute;font-size:min(6vw,26px);color:#d4af37}
+.sel{outline:4px solid #f5c542;outline-offset:-4px}
+.mv{background:radial-gradient(circle,#5ee0a088 30%,transparent 32%)}</style>
+<div class="hud"><span>Turno <b id="t">Blancas</b></span><span>Tus fichas <b id="n1">12</b></span><span>CPU <b id="n2">12</b></span><span id="st"></span></div>
+<div id="b"></div>
+<div class="row"><button class="btn" onclick="init()">Nueva partida</button></div>
+<p class="help">Juegas con las blancas (abajo). Capturas obligatorias, cadenas múltiples y coronación a dama.</p></main>
+<script src="../assets/arcade.js"></script><script>
+let bd,turn,sel,over;
+function init(){bd=Array(64).fill(null);
+ for(let i=0;i<64;i++){const r=i/8|0,c=i%8;if((r+c)%2===0)continue;
+  if(r<3)bd[i]={c:'b',k:0}; if(r>4)bd[i]={c:'w',k:0};}
+ turn='w';sel=null;over=0;draw();}
+function dirs(p){return p.k?[[1,1],[1,-1],[-1,1],[-1,-1]]:(p.c==='w'?[[-1,1],[-1,-1]]:[[1,1],[1,-1]]);}
+function gen(b,col,onlyFrom){
+ const caps=[],simple=[];
+ for(let i=0;i<64;i++){const p=b[i];if(!p||p.c!==col)continue;
+  if(onlyFrom!==undefined&&i!==onlyFrom)continue;
+  const r=i/8|0,c=i%8;
+  for(const [dr,dc] of dirs(p)){
+   const r1=r+dr,c1=c+dc,r2=r+2*dr,c2=c+2*dc;
+   if(r1<0||r1>7||c1<0||c1>7)continue;
+   const t=b[r1*8+c1];
+   if(!t){ if(onlyFrom===undefined)simple.push([i,r1*8+c1,null]); }
+   else if(t.c!==col&&r2>=0&&r2<8&&c2>=0&&c2<8&&!b[r2*8+c2]) caps.push([i,r2*8+c2,r1*8+c1]);
+  }}
+ return caps.length?caps:(onlyFrom===undefined?simple:[]);}
+function apply(b,m){
+ const nb=b.slice(),[i,f,cap]=m; const p={...nb[i]};
+ nb[i]=null; if(cap!==null)nb[cap]=null;
+ const r=f/8|0;
+ if((p.c==='w'&&r===0)||(p.c==='b'&&r===7))p.k=1;
+ nb[f]=p; return nb;}
+function click(i){ if(over||turn!=='w')return;
+ const ms=gen(bd,'w',chain??undefined);
+ if(sel!==null){ const m=ms.find(x=>x[0]===sel&&x[1]===i);
+  if(m){ bd=apply(bd,m); Arcade.beep(m[2]!==null?300:600,.07);
+   if(m[2]!==null&&gen(bd,'w',m[1]).some(q=>q[2]!==null)){chain=m[1];sel=m[1];draw();return;}
+   chain=null;sel=null;turn='b';draw();setTimeout(ai,400);return;} }
+ if(bd[i]&&bd[i].c==='w'&&ms.some(m=>m[0]===i))sel=i;else sel=null;
+ draw();}
+let chain=null;
+function ai(){
+ let from=undefined;
+ for(let guard=0;guard<12;guard++){
+  const ms=gen(bd,'b',from);
+  if(!ms.length)break;
+  let best=ms[0],bv=-1e9;
+  for(const m of ms){ const nb=apply(bd,m);
+   let v=(m[2]!==null?10:0)+evalB(nb)+Math.random();
+   if(v>bv){bv=v;best=m;} }
+  bd=apply(bd,best);Arcade.beep(best[2]!==null?250:450,.07);
+  if(best[2]!==null&&gen(bd,'b',best[1]).some(q=>q[2]!==null)){from=best[1];continue;}
+  break;}
+ turn='w';draw();check();}
+function evalB(b){let s=0;for(const p of b)if(p)s+=(p.c==='b'?1:-1)*(p.k?3:1);return s;}
+function check(){
+ const w=bd.filter(p=>p&&p.c==='w').length,bl=bd.filter(p=>p&&p.c==='b').length;
+ document.getElementById('n1').textContent=w;document.getElementById('n2').textContent=bl;
+ if(!w||!gen(bd,'w').length){over=1;document.getElementById('st').textContent='Gana la CPU 😈';}
+ else if(!bl||!gen(bd,'b').length){over=1;document.getElementById('st').textContent='¡GANAS! 🏆';}}
+function draw(){const e=document.getElementById('b');e.innerHTML='';
+ const ms=turn==='w'&&!over?gen(bd,'w',chain??undefined):[];
+ for(let i=0;i<64;i++){const r=i/8|0,c=i%8;
+  const d=document.createElement('div');d.className='s '+((r+c)%2?'dk':'lt');
+  if(sel!==null&&ms.some(m=>m[0]===sel&&m[1]===i))d.classList.add('mv');
+  if(i===sel)d.classList.add('sel');
+  const p=bd[i];
+  if(p){const q=document.createElement('div');q.className='p '+(p.c==='w'?'w':'bl')+(p.k?' k':'');d.appendChild(q);}
+  d.onclick=()=>click(i);e.appendChild(d);}
+ document.getElementById('t').textContent=turn==='w'?'Blancas (tú)':'Negras (CPU)';
+ check();}
+init();</script></body></html>

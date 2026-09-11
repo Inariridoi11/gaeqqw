@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🥅 Air Hockey</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🥅 Air Hockey</h1></header><main>
+<div class="hud"><span>Tú <b id="a">0</b></span><span>CPU <b id="b">0</b></span><span id="st">Primero a 7</span></div>
+<canvas id="c" width="440" height="640"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Mueve tu mazo con el ratón o el dedo en tu mitad del campo.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let me,cpu,pk,s1,s2,over;
+function init(){me={x:220,y:560};cpu={x:220,y:80};s1=s2=0;over=0;reset(1);}
+function reset(d){pk={x:220,y:320,vx:(Math.random()*160-80),vy:260*d};}
+function pos(e){const r=c.getBoundingClientRect();const p=e.touches?e.touches[0]:e;
+ return {x:(p.clientX-r.left)*(440/r.width),y:(p.clientY-r.top)*(640/r.height)};}
+function mv(e){const p=pos(e);me.x=Math.max(28,Math.min(412,p.x));me.y=Math.max(330,Math.min(612,p.y));e.preventDefault&&e.preventDefault();}
+c.addEventListener('mousemove',mv);c.addEventListener('touchmove',mv);
+Arcade.loop(dt=>{
+ if(!over){
+  const tgt=pk.y<340?{x:pk.x,y:Math.min(300,pk.y-10)}:{x:220,y:80};
+  cpu.x+=Math.max(-330*dt,Math.min(330*dt,tgt.x-cpu.x));
+  cpu.y+=Math.max(-260*dt,Math.min(260*dt,tgt.y-cpu.y));
+  cpu.y=Math.max(28,Math.min(300,cpu.y));
+  pk.x+=pk.vx*dt;pk.y+=pk.vy*dt;pk.vx*=.999;pk.vy*=.999;
+  if(pk.x<18){pk.x=18;pk.vx*=-1;Arcade.beep(400,.04);} if(pk.x>422){pk.x=422;pk.vx*=-1;Arcade.beep(400,.04);}
+  for(const m of [me,cpu]){const d=Math.hypot(pk.x-m.x,pk.y-m.y);
+   if(d<44){const a=Math.atan2(pk.y-m.y,pk.x-m.x);
+    pk.x=m.x+Math.cos(a)*44;pk.y=m.y+Math.sin(a)*44;
+    const sp=Math.max(320,Math.hypot(pk.vx,pk.vy)*1.06);
+    pk.vx=Math.cos(a)*sp;pk.vy=Math.sin(a)*sp;Arcade.beep(600,.05);}}
+  if(pk.y<12){ if(Math.abs(pk.x-220)<80){s1++;Arcade.beep(1100,.25);reset(1);} else {pk.y=12;pk.vy*=-1;} }
+  if(pk.y>628){ if(Math.abs(pk.x-220)<80){s2++;Arcade.beep(150,.25);reset(-1);} else {pk.y=628;pk.vy*=-1;} }
+  if(s1>=7||s2>=7){over=1;document.getElementById('st').textContent=s1>=7?'🏆 ¡Ganas!':'Gana la CPU';}
+ }
+ x.fillStyle='#0e1a2e';x.fillRect(0,0,440,640);
+ x.strokeStyle='#26304a';x.lineWidth=3;x.beginPath();x.moveTo(0,320);x.lineTo(440,320);x.stroke();
+ x.beginPath();x.arc(220,320,64,0,7);x.stroke();
+ x.fillStyle='#182a44';x.fillRect(140,0,160,10);x.fillRect(140,630,160,10);
+ x.fillStyle='#5ee0a0';x.beginPath();x.arc(me.x,me.y,26,0,7);x.fill();
+ x.fillStyle='#ff6b6b';x.beginPath();x.arc(cpu.x,cpu.y,26,0,7);x.fill();
+ x.fillStyle='#fff';x.beginPath();x.arc(pk.x,pk.y,15,0,7);x.fill();
+ document.getElementById('a').textContent=s1;document.getElementById('b').textContent=s2;});
+init();</script></body></html>

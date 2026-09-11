@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔢 2048</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🔢 2048</h1></header><main>
+<style>#g{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;background:#182033;padding:10px;border-radius:10px;width:min(92vw,420px)}
+.t{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:clamp(16px,6vw,32px);font-weight:bold;background:#212a40;color:#e8ecf7;transition:.1s}</style>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Récord <b id="b">0</b></span></div>
+<div id="g"></div>
+<div class="row"><button class="btn" onclick="init()">Nueva partida</button></div>
+<p class="help">Flechas o desliza. Junta fichas iguales hasta llegar a 2048.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const COL={2:'#2c3450',4:'#354064',8:'#7aa2ff',16:'#5e8ee8',32:'#b06bd6',64:'#8a5ad6',128:'#5ee0a0',256:'#3fbf85',512:'#e8d24a',1024:'#e89a4a',2048:'#ff6b6b'};
+let g,score;
+function init(){g=Array(16).fill(0);score=0;add();add();draw();}
+function add(){const e=[];g.forEach((v,i)=>!v&&e.push(i));if(!e.length)return;g[e[Math.random()*e.length|0]]=Math.random()<.9?2:4;}
+function rowsOf(dir){const r=[];for(let i=0;i<4;i++){const line=[];for(let j=0;j<4;j++){
+  const idx=dir==='l'?i*4+j:dir==='r'?i*4+(3-j):dir==='u'?j*4+i:(3-j)*4+i;line.push(idx);}r.push(line);}return r;}
+function move(dir){let moved=0;
+ for(const line of rowsOf(dir)){
+  let v=line.map(i=>g[i]).filter(n=>n);
+  for(let i=0;i<v.length-1;i++)if(v[i]===v[i+1]){v[i]*=2;score+=v[i];v.splice(i+1,1);Arcade.beep(400+v[i],.05);}
+  while(v.length<4)v.push(0);
+  line.forEach((idx,j)=>{if(g[idx]!==v[j])moved=1;g[idx]=v[j];});}
+ if(moved){add();draw();
+  if(!g.includes(0)&&!['l','r','u','d'].some(d=>can(d)))setTimeout(()=>alert('¡Fin! Puntos: '+score),100);}}
+function can(dir){const s=g.slice();let m=0;
+ for(const line of rowsOf(dir)){let v=line.map(i=>s[i]).filter(n=>n);
+  for(let i=0;i<v.length-1;i++)if(v[i]===v[i+1])m=1;
+  while(v.length<4)v.push(0); line.forEach((idx,j)=>{if(s[idx]!==v[j])m=1;});}
+ return m;}
+addEventListener('keydown',e=>{const m={ArrowLeft:'l',ArrowRight:'r',ArrowUp:'u',ArrowDown:'d'};if(m[e.key]){move(m[e.key]);e.preventDefault();}});
+let sx,sy;addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;});
+addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+ if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
+ move(Math.abs(dx)>Math.abs(dy)?(dx>0?'r':'l'):(dy>0?'d':'u'));});
+function draw(){const e=document.getElementById('g');e.innerHTML='';
+ g.forEach(v=>{const d=document.createElement('div');d.className='t';d.textContent=v||'';
+  if(v){d.style.background=COL[v]||'#ff4444';d.style.color=v>4?'#fff':'#cdd6ee';}d.style.fontSize=v>999?'clamp(12px,4.5vw,24px)':'';e.appendChild(d);});
+ s.textContent=score;b.textContent=Arcade.best('2048',score);}
+init();</script></body></html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⌨️ Mecanografía</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>⌨️ Mecanografía</h1></header><main>
+<style>#txt{font-size:19px;line-height:1.9;max-width:720px;background:#141a28;padding:18px;border-radius:10px;border:1px solid var(--line)}
+.ok{color:#5ee0a0}.bad{color:#ff6b6b;text-decoration:underline}.cur{background:#7aa2ff;color:#0b0d14;border-radius:2px}
+#inp{position:absolute;left:-9999px}</style>
+<div class="hud"><span>PPM <b id="w">0</b></span><span>Precisión <b id="p">100</b>%</span><span>Tiempo <b id="t">0</b>s</span><span>Récord <b id="b">0</b></span></div>
+<div id="txt" onclick="document.getElementById('inp').focus()"></div>
+<input id="inp" autocomplete="off">
+<div class="row"><button class="btn" onclick="init()">Nuevo texto</button></div>
+<p class="help">Haz clic en el texto y escribe. Se mide en palabras por minuto (PPM).</p></main>
+<script src="../assets/arcade.js"></script><script>
+const T=["el rapido zorro marron salta sobre el perro perezoso mientras la luna ilumina el valle",
+"programar es el arte de decir a una maquina exactamente lo que debe hacer paso a paso",
+"la practica constante convierte lo dificil en sencillo y lo sencillo en elegante",
+"un videojuego es una conversacion entre el diseno el jugador y el azar bien medido",
+"escribir rapido no sirve de nada si cada tecla que pulsas es la equivocada",
+"los mejores jugadores no son los mas rapidos sino los que cometen menos errores"];
+let txt,pos,errs,t0,started,typed;
+function init(){txt=T[Math.random()*T.length|0];pos=0;errs=0;started=0;typed=0;render();
+ document.getElementById('inp').value='';document.getElementById('inp').focus();}
+document.getElementById('inp').addEventListener('input',e=>{
+ const v=e.target.value; e.target.value='';
+ for(const ch of v){
+  if(!started){started=1;t0=Date.now();}
+  typed++;
+  if(ch===txt[pos]){pos++;Arcade.beep(700,.02,'sine',.02);}
+  else{errs++;Arcade.beep(200,.05);}
+  if(pos>=txt.length){const secs=(Date.now()-t0)/1000;
+   const wpm=Math.round((txt.length/5)/(secs/60));
+   document.getElementById('b').textContent=Arcade.best('typing',wpm);
+   setTimeout(()=>{alert('¡Completado! '+wpm+' PPM con '+errs+' errores');init();},150);}}
+ render();});
+function render(){const e=document.getElementById('txt');
+ e.innerHTML=txt.split('').map((ch,i)=>i<pos?'<span class=ok>'+ch+'</span>':i===pos?'<span class=cur>'+ch+'</span>':ch).join('');
+ const secs=started?(Date.now()-t0)/1000:0;
+ document.getElementById('t').textContent=Math.round(secs);
+ document.getElementById('w').textContent=secs>1?Math.round((pos/5)/(secs/60)):0;
+ document.getElementById('p').textContent=typed?Math.round(100*(typed-errs)/typed):100;}
+setInterval(render,500);init();</script></body></html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧱 Breakout</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🧱 Breakout</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vidas <b id="v">3</b></span><span>Nivel <b id="n">1</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="640" height="440"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Mueve con el ratón, el dedo o ←/→. Rompe todos los ladrillos.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let pad,ball,bricks,score,lives,lvl,dead,k={};
+function build(){bricks=[];const rows=4+Math.min(4,lvl),cols=10;
+ for(let r=0;r<rows;r++)for(let i=0;i<cols;i++)bricks.push({x:20+i*60,y:50+r*26,w:56,h:20,hp:1+(r<2?1:0),c:`hsl(${r*40},70%,60%)`});}
+function init(){score=0;lives=3;lvl=1;dead=0;pad={x:270,w:110};build();launch();}
+function launch(){ball={x:320,y:330,vx:(Math.random()>.5?1:-1)*220,vy:-260,r:8};}
+addEventListener('keydown',e=>{k[e.key]=1;if(dead&&e.key===' ')init();});
+addEventListener('keyup',e=>k[e.key]=0);
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();pad.x=(e.clientX-r.left)*(c.width/r.width)-pad.w/2;});
+c.addEventListener('touchmove',e=>{const r=c.getBoundingClientRect();pad.x=(e.touches[0].clientX-r.left)*(c.width/r.width)-pad.w/2;e.preventDefault();});
+Arcade.loop(dt=>{
+ if(!dead){
+  if(k.ArrowLeft)pad.x-=460*dt; if(k.ArrowRight)pad.x+=460*dt;
+  pad.x=Math.max(0,Math.min(c.width-pad.w,pad.x));
+  ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;
+  if(ball.x<ball.r||ball.x>c.width-ball.r){ball.vx*=-1;Arcade.beep(400,.04);}
+  if(ball.y<ball.r){ball.vy*=-1;Arcade.beep(400,.04);}
+  if(ball.y>c.height-24&&ball.y<c.height-8&&ball.x>pad.x&&ball.x<pad.x+pad.w&&ball.vy>0){
+   const t=(ball.x-pad.x)/pad.w-.5;ball.vx=t*560;ball.vy=-Math.abs(ball.vy)*1.02;Arcade.beep(650,.05);}
+  if(ball.y>c.height+20){lives--;Arcade.beep(120,.25);if(lives<=0)dead=1;else launch();}
+  for(const br of bricks){ if(br.hp>0&&ball.x>br.x-ball.r&&ball.x<br.x+br.w+ball.r&&ball.y>br.y-ball.r&&ball.y<br.y+br.h+ball.r){
+    br.hp--;score+=10;ball.vy*=-1;Arcade.beep(880,.04);break;}}
+  if(bricks.every(b=>b.hp<=0)){lvl++;score+=100;build();launch();}
+ }
+ x.fillStyle='#0b0d14';x.fillRect(0,0,c.width,c.height);
+ for(const b of bricks)if(b.hp>0){x.fillStyle=b.hp>1?'#fff':b.c;x.fillRect(b.x,b.y,b.w,b.h);}
+ x.fillStyle='#5ee0a0';x.fillRect(pad.x,c.height-18,pad.w,10);
+ x.fillStyle='#fff';x.beginPath();x.arc(ball.x,ball.y,ball.r,0,7);x.fill();
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,c.width,c.height);x.fillStyle='#ff6b6b';x.font='bold 28px monospace';x.textAlign='center';
+  x.fillText('GAME OVER',320,220);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO para reiniciar',320,250);x.textAlign='left';}
+ s.textContent=score;v.textContent=lives;n.textContent=lvl;b.textContent=Arcade.best('breakout',score);});
+init();</script></body></html>

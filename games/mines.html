@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>💣 Buscaminas</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>💣 Buscaminas</h1></header><main>
+<style>#g{display:grid;gap:2px;background:#182033;padding:8px;border-radius:8px;user-select:none}
+.c{width:30px;height:30px;background:#2b3450;border:1px solid #3a4260;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;cursor:pointer}
+.o{background:#151b29;cursor:default}.m{background:#ff6b6b}
+@media(max-width:520px){.c{width:22px;height:22px;font-size:11px}}</style>
+<div class="hud"><span>Minas <b id="m">10</b></span><span>Tiempo <b id="t">0</b>s</span><span id="st"></span></div>
+<div id="g"></div>
+<div class="row"><button class="btn" onclick="init(9,9,10)">Fácil</button><button class="btn" onclick="init(16,16,40)">Medio</button><button class="btn" onclick="init(22,16,70)">Difícil</button></div>
+<p class="help">Clic para abrir, clic derecho (o pulsación larga) para bandera.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const NC=['','#7aa2ff','#5ee0a0','#ff6b6b','#b06bd6','#e8d24a','#4fd6e0','#fff','#94a0bd'];
+let W,H,M,cells,started,over,t0,timer;
+function init(w,h,m){W=w;H=h;M=m;started=0;over=0;clearInterval(timer);document.getElementById('t').textContent=0;
+ document.getElementById('st').textContent='';document.getElementById('m').textContent=m;
+ cells=Array.from({length:w*h},()=>({mine:0,open:0,flag:0,n:0}));
+ const g=document.getElementById('g');g.style.gridTemplateColumns=`repeat(${w},auto)`;g.innerHTML='';
+ cells.forEach((c,i)=>{const d=document.createElement('div');d.className='c';d.dataset.i=i;
+  d.onclick=()=>open(i);d.oncontextmenu=e=>{e.preventDefault();flag(i);};
+  let lp;d.ontouchstart=()=>lp=setTimeout(()=>{flag(i);lp=0;},400);
+  d.ontouchend=()=>{if(lp){clearTimeout(lp);}};
+  g.appendChild(d);});}
+function nb(i){const r=[],x=i%W,y=i/W|0;
+ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const a=x+dx,b=y+dy;
+  if((dx||dy)&&a>=0&&b>=0&&a<W&&b<H)r.push(b*W+a);}return r;}
+function plant(skip){const safe=new Set([skip,...nb(skip)]);let p=0;
+ while(p<M){const i=Math.random()*cells.length|0;if(cells[i].mine||safe.has(i))continue;cells[i].mine=1;p++;}
+ cells.forEach((c,i)=>c.n=nb(i).filter(j=>cells[j].mine).length);
+ t0=Date.now();timer=setInterval(()=>document.getElementById('t').textContent=Math.floor((Date.now()-t0)/1000),500);}
+function open(i){ if(over||cells[i].flag||cells[i].open)return;
+ if(!started){started=1;plant(i);}
+ const c=cells[i];c.open=1;
+ if(c.mine){over=1;clearInterval(timer);cells.forEach((q,j)=>{if(q.mine)q.open=1;});
+  document.getElementById('st').textContent='💥 ¡Boom!';Arcade.beep(90,.4);draw();return;}
+ Arcade.beep(700,.03);
+ if(c.n===0){const q=[i];while(q.length){for(const j of nb(q.pop())){const d=cells[j];
+  if(!d.open&&!d.flag&&!d.mine){d.open=1;if(d.n===0)q.push(j);}}}}
+ draw(); win();}
+function flag(i){if(over||cells[i].open)return;cells[i].flag^=1;
+ document.getElementById('m').textContent=M-cells.filter(c=>c.flag).length;draw();win();}
+function win(){ if(cells.every(c=>c.open||c.mine)){over=1;clearInterval(timer);
+  document.getElementById('st').textContent='🏆 ¡Ganaste!';Arcade.beep(1200,.3);} }
+function draw(){[...document.getElementById('g').children].forEach((d,i)=>{const c=cells[i];
+ d.className='c'+(c.open?' o':'')+(c.open&&c.mine?' m':'');
+ d.textContent=c.open?(c.mine?'💣':(c.n||'')):(c.flag?'🚩':'');
+ d.style.color=c.open&&!c.mine?NC[c.n]:'';});}
+init(9,9,10);</script></body></html>

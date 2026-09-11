@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌲 Las 8 páginas</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🌲 Las 8 páginas</h1></header><main>
+<div class="hud"><span>Páginas <b id="p">0</b>/8</span><span>Linterna <b id="ba">100</b>%</span><span>Cordura <b id="sa">100</b>%</span><span id="st"></span></div>
+<canvas id="c" width="640" height="380"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">WASD/flechas para moverte, SHIFT correr, F linterna, E recoger. Encuentra 8 páginas en el bosque… sin mirarlo demasiado.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),X=c.getContext('2d'),W=64,H=64;
+let trees,pages,px,py,pa,bat,san,got,he,dead,k={},flash=1,stam;
+function init(){trees=[];for(let i=0;i<420;i++)trees.push({x:Math.random()*W,y:Math.random()*H,r:.3+Math.random()*.25});
+ pages=[];for(let i=0;i<8;i++){const t=trees[Math.random()*trees.length|0];pages.push({x:t.x+.6,y:t.y+.6,got:0});}
+ px=W/2;py=H/2;pa=0;bat=100;san=100;got=0;dead=0;flash=1;stam=100;
+ he={x:5,y:5,t:0};document.getElementById('st').textContent='';}
+addEventListener('keydown',e=>{k[e.key.toLowerCase()]=k[e.code]=1;
+ if(e.key==='f'||e.key==='F')flash=!flash;
+ if(e.key==='e'||e.key==='E')grab();
+ if(dead&&e.code==='Space')init();});
+addEventListener('keyup',e=>k[e.key.toLowerCase()]=k[e.code]=0);
+function grab(){for(const p of pages)if(!p.got&&Math.hypot(p.x-px,p.y-py)<1.3){
+ p.got=1;got++;Arcade.beep(200,.3,'sine');
+ he.t=Math.max(.6,2.4-got*.25);
+ document.getElementById('st').textContent='📄 Página '+got+'/8';
+ if(got===8){dead='win';document.getElementById('st').textContent='🏆 ¡Escapaste con las 8 páginas!';}
+ return;}}
+function blocked(x,y){return trees.some(t=>Math.hypot(t.x-x,t.y-y)<t.r+.2);}
+Arcade.loop(dt=>{
+ if(!dead){
+  const run=k.shift&&stam>0;
+  stam+=(run?-34:22)*dt; stam=Math.max(0,Math.min(100,stam));
+  const sp=(run?4.4:2.2)*dt;
+  if(k.arrowleft||k.a)pa-=2.1*dt; if(k.arrowright||k.d)pa+=2.1*dt;
+  let mx=0,my=0;
+  if(k.arrowup||k.w){mx+=Math.cos(pa)*sp;my+=Math.sin(pa)*sp;}
+  if(k.arrowdown||k.s){mx-=Math.cos(pa)*sp;my-=Math.sin(pa)*sp;}
+  if(!blocked(px+mx,py)&&px+mx>0&&px+mx<W)px+=mx;
+  if(!blocked(px,py+my)&&py+my>0&&py+my<H)py+=my;
+  if(flash)bat-=3.2*dt; bat=Math.max(0,bat); if(bat<=0)flash=0;
+  // el acechador
+  const d=Math.hypot(he.x-px,he.y-py);
+  he.t-=dt;
+  if(he.t<=0){he.t=Math.max(.8,3.2-got*.3);
+   const ang=Math.random()*7, r=9+Math.random()*7;
+   he.x=Math.max(1,Math.min(W-1,px+Math.cos(ang)*r));
+   he.y=Math.max(1,Math.min(H-1,py+Math.sin(ang)*r));}
+  // ¿está en pantalla?
+  let rel=Math.atan2(he.y-py,he.x-px)-pa;
+  while(rel>Math.PI)rel-=2*Math.PI; while(rel<-Math.PI)rel+=2*Math.PI;
+  const looking=Math.abs(rel)<.55&&d<22;
+  if(looking){san-=(22-d)*1.6*dt;Arcade.beep(60+Math.random()*40,.05,'sawtooth',.02);
+   he.x+=(px-he.x)*.25*dt;he.y+=(py-he.y)*.25*dt;}
+  else san=Math.min(100,san+3.5*dt);
+  if(d<1.3||san<=0){dead=1;Arcade.beep(50,.9,'sawtooth');
+   document.getElementById('st').textContent='💀 Te encontró… (ESPACIO)';}
+ }
+ // render pseudo-3D simple
+ X.fillStyle='#04060a';X.fillRect(0,0,640,380);
+ const fov=1.05;
+ const objs=[...trees.map(t=>({...t,type:'t'})),
+  ...pages.filter(p=>!p.got).map(p=>({...p,type:'p',r:.2})),
+  {x:he.x,y:he.y,r:.5,type:'h'}];
+ objs.map(o=>{const d=Math.hypot(o.x-px,o.y-py);
+   let rel=Math.atan2(o.y-py,o.x-px)-pa;
+   while(rel>Math.PI)rel-=2*Math.PI; while(rel<-Math.PI)rel+=2*Math.PI;
+   return {...o,d,rel};})
+  .filter(o=>Math.abs(o.rel)<fov&&o.d<26)
+  .sort((a,b)=>b.d-a.d)
+  .forEach(o=>{
+   const sx=320+o.rel/fov*320, h=Math.min(700,320/o.d*o.r*4), y0=190;
+   const lit=flash?Math.max(0,1-o.d/16):Math.max(0,.28-o.d/40);
+   if(o.type==='t'){X.fillStyle='rgb('+(60*lit|0)+','+(48*lit|0)+','+(38*lit|0)+')';
+    X.fillRect(sx-h/6,y0-h/2,h/3,h);}
+   else if(o.type==='p'){X.fillStyle='rgb('+(240*Math.max(lit,.25)|0)+','+(240*Math.max(lit,.25)|0)+',220)';
+    X.fillRect(sx-h/3,y0-h/6,h*.66,h*.9);}
+   else{X.fillStyle='rgb('+(220*Math.max(lit,.3)|0)+','+(220*Math.max(lit,.3)|0)+','+(225*Math.max(lit,.3)|0)+')';
+    X.fillRect(sx-h/8,y0-h/2,h/4,h*1.2);
+    X.fillStyle='#f0f0f0';X.beginPath();X.arc(sx,y0-h/2,h/10,0,7);X.fill();}});
+ // suelo y viñeta
+ const gg=X.createLinearGradient(0,200,0,380);gg.addColorStop(0,'#0a0f0b');gg.addColorStop(1,'#050705');
+ X.fillStyle=gg;X.fillRect(0,240,640,140);
+ if(flash){const fl=X.createRadialGradient(320,190,10,320,190,320);
+  fl.addColorStop(0,'rgba(255,250,220,.13)');fl.addColorStop(1,'rgba(0,0,0,0)');
+  X.fillStyle=fl;X.fillRect(0,0,640,380);}
+ const noise=(100-san)/100;
+ for(let i=0;i<noise*900;i++){X.fillStyle='rgba(255,255,255,'+(Math.random()*.25)+')';
+  X.fillRect(Math.random()*640,Math.random()*380,2,2);}
+ const vg=X.createRadialGradient(320,190,60,320,190,360);
+ vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.92)');
+ X.fillStyle=vg;X.fillRect(0,0,640,380);
+ X.fillStyle='#94a0bd';X.font='11px monospace';X.fillText('Energía: '+Math.round(stam),10,372);
+ document.getElementById('p').textContent=got;
+ document.getElementById('ba').textContent=Math.round(bat);
+ document.getElementById('sa').textContent=Math.round(Math.max(0,san));});
+init();</script></body></html>

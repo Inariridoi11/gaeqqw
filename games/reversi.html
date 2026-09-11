@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⚪ Reversi (Othello)</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>⚪ Reversi (Othello)</h1></header><main>
+<style>#b{display:grid;grid-template-columns:repeat(8,1fr);width:min(92vw,480px);aspect-ratio:1;background:#1b5e3a;gap:2px;padding:4px;border-radius:8px}
+.s{background:#1f7a4a;display:flex;align-items:center;justify-content:center;border-radius:3px;cursor:pointer}
+.p{width:80%;aspect-ratio:1;border-radius:50%}
+.bk{background:#151515}.wt{background:#f4f4f4}
+.hint{width:26%;aspect-ratio:1;border-radius:50%;background:#ffffff44}</style>
+<div class="hud"><span>⚫ Tú <b id="n1">2</b></span><span>⚪ CPU <b id="n2">2</b></span><span id="st"></span></div>
+<div id="b"></div>
+<div class="row"><button class="btn" onclick="init()">Nueva partida</button></div>
+<p class="help">Encierra fichas de la CPU entre dos tuyas para voltearlas. Gana quien tenga más al final.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const W=[[100,-20,10,5,5,10,-20,100],[-20,-40,-5,-5,-5,-5,-40,-20],[10,-5,3,3,3,3,-5,10],[5,-5,3,3,3,3,-5,5],
+[5,-5,3,3,3,3,-5,5],[10,-5,3,3,3,3,-5,10],[-20,-40,-5,-5,-5,-5,-40,-20],[100,-20,10,5,5,10,-20,100]];
+let bd,turn,over;
+function init(){bd=Array(64).fill(0);bd[27]=bd[36]=1;bd[28]=bd[35]=2;turn=1;over=0;draw();}
+function flips(b,i,p){ if(b[i])return [];
+ const r=i/8|0,c=i%8,res=[];
+ for(const[dr,dc]of[[0,1],[0,-1],[1,0],[-1,0],[1,1],[1,-1],[-1,1],[-1,-1]]){
+  const line=[];let rr=r+dr,cc=c+dc;
+  while(rr>=0&&rr<8&&cc>=0&&cc<8&&b[rr*8+cc]===3-p){line.push(rr*8+cc);rr+=dr;cc+=dc;}
+  if(line.length&&rr>=0&&rr<8&&cc>=0&&cc<8&&b[rr*8+cc]===p)res.push(...line);}
+ return res;}
+function moves(b,p){const m=[];for(let i=0;i<64;i++)if(!b[i]&&flips(b,i,p).length)m.push(i);return m;}
+function play(i,p){const f=flips(bd,i,p);if(!f.length)return 0;
+ bd[i]=p;f.forEach(j=>bd[j]=p);Arcade.beep(p===1?600:420,.06);return 1;}
+function turnEnd(){
+ const other=3-turn;
+ if(moves(bd,other).length)turn=other;
+ else if(!moves(bd,turn).length){over=1;}
+ draw();
+ if(!over&&turn===2)setTimeout(cpu,420);}
+function cpu(){ const ms=moves(bd,2); if(!ms.length){turnEnd();return;}
+ let best=ms[0],bv=-1e9;
+ for(const i of ms){ const f=flips(bd,i,2); let v=W[i/8|0][i%8]+f.length;
+  if(v>bv){bv=v;best=i;} }
+ play(best,2);turnEnd();}
+function draw(){const e=document.getElementById('b');e.innerHTML='';
+ const av=turn===1&&!over?moves(bd,1):[];
+ for(let i=0;i<64;i++){const d=document.createElement('div');d.className='s';
+  if(bd[i]){const q=document.createElement('div');q.className='p '+(bd[i]===1?'bk':'wt');d.appendChild(q);}
+  else if(av.includes(i)){const q=document.createElement('div');q.className='hint';d.appendChild(q);
+   d.onclick=()=>{if(play(i,1))turnEnd();};}
+  e.appendChild(d);}
+ const a=bd.filter(v=>v===1).length,b2=bd.filter(v=>v===2).length;
+ document.getElementById('n1').textContent=a;document.getElementById('n2').textContent=b2;
+ document.getElementById('st').textContent=over?(a>b2?'🏆 ¡Ganas!':a<b2?'Gana la CPU':'Empate'):(turn===1?'Tu turno':'Piensa la CPU…');}
+init();</script></body></html>

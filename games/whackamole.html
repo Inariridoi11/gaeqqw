@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔨 Golpea al topo</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🔨 Golpea al topo</h1></header><main>
+<style>#g{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:min(88vw,420px)}
+.h{aspect-ratio:1;background:#1a2233;border:2px solid #26304a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(28px,10vw,52px);cursor:pointer;overflow:hidden}
+.h span{transform:translateY(120%);transition:transform .12s}
+.h.up span{transform:translateY(0)}</style>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Fallos <b id="f">0</b></span><span>Tiempo <b id="t">30</b></span><span>Récord <b id="b">0</b></span></div>
+<div id="g"></div>
+<div class="row"><button class="btn" onclick="start()">Empezar (30s)</button></div>
+<p class="help">Golpea los topos 🦔, evita las bombas 💣. ¡Rápido!</p></main>
+<script src="../assets/arcade.js"></script><script>
+const g=document.getElementById('g');let holes=[],score=0,fails=0,time=30,run=0,iv,tv;
+for(let i=0;i<9;i++){const d=document.createElement('div');d.className='h';d.innerHTML='<span></span>';
+ d.onclick=()=>hit(i);g.appendChild(d);holes.push({up:0,bomb:0});}
+function start(){score=0;fails=0;time=30;run=1;s.textContent=0;f.textContent=0;t.textContent=30;
+ clearInterval(iv);clearInterval(tv);
+ iv=setInterval(pop,Math.max(380,760-score*4));
+ tv=setInterval(()=>{time--;t.textContent=time;if(time<=0)stop();},1000);}
+function stop(){run=0;clearInterval(iv);clearInterval(tv);
+ holes.forEach((h,i)=>{h.up=0;g.children[i].className='h';});
+ document.getElementById('b').textContent=Arcade.best('whack',score);
+ setTimeout(()=>alert('¡Fin! Puntos: '+score),120);}
+function pop(){ if(!run)return;
+ const i=Math.random()*9|0,h=holes[i];if(h.up)return;
+ h.up=1;h.bomb=Math.random()<.2;
+ g.children[i].className='h up';g.children[i].firstChild.textContent=h.bomb?'💣':'🦔';
+ setTimeout(()=>{if(h.up){h.up=0;g.children[i].className='h';}},Math.max(450,1100-score*6));}
+function hit(i){ if(!run||!holes[i].up)return;
+ if(holes[i].bomb){fails++;score=Math.max(0,score-5);Arcade.beep(100,.25);}
+ else{score+=10;Arcade.beep(900,.06);}
+ holes[i].up=0;g.children[i].className='h';
+ s.textContent=score;f.textContent=fails;}
+document.getElementById('b').textContent=Arcade.best('whack',0);
+</script></body></html>

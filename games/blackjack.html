@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🃏 Blackjack</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🃏 Blackjack</h1></header><main>
+<style>.hand{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0;min-height:96px}
+.card{width:64px;height:92px;background:#f6f6f6;color:#111;border-radius:8px;display:flex;flex-direction:column;justify-content:space-between;padding:6px;font-size:15px;font-weight:bold;box-shadow:0 4px 10px #0007}
+.red{color:#c0392b}.back{background:linear-gradient(135deg,#2b3450,#4a5573);color:transparent}
+h3{font-size:13px;color:var(--dim);margin:4px}</style>
+<div class="hud"><span>Fichas <b id="ch">100</b></span><span>Apuesta <b id="bet">10</b></span><span>Manos <b id="hs">0</b></span><span id="st"></span></div>
+<h3>CRUPIER (<span id="dv">0</span>)</h3><div class="hand" id="dh"></div>
+<h3>TÚ (<span id="pv">0</span>)</h3><div class="hand" id="ph"></div>
+<div class="row">
+ <button class="btn" onclick="hit()">Pedir</button><button class="btn" onclick="stand()">Plantarse</button>
+ <button class="btn" onclick="dbl()">Doblar</button><button class="btn" onclick="deal()">Repartir</button>
+ <button class="btn" onclick="bet=Math.min(chips,bet+10);upd()">Apuesta +10</button>
+ <button class="btn" onclick="bet=Math.max(10,bet-10);upd()">-10</button></div>
+<p class="help">Acércate a 21 sin pasarte. Blackjack paga 3:2. El crupier se planta en 17.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const SU=['♠','♥','♦','♣'],RK=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let deck,pl,dl,chips=100,bet=10,inplay=0,hands=0;
+function shuffle(){deck=[];for(const s of SU)for(const r of RK)deck.push({s,r});
+ for(let i=deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[deck[i],deck[j]]=[deck[j],deck[i]];}}
+function val(h){let v=0,a=0;for(const c of h){if(c.r==='A'){a++;v+=11;}else v+=['J','Q','K'].includes(c.r)?10:+c.r;}
+ while(v>21&&a){v-=10;a--;}return v;}
+function deal(){ if(chips<bet){document.getElementById('st').textContent='Sin fichas — reinicia con F5';return;}
+ if(!deck||deck.length<15)shuffle();
+ pl=[deck.pop(),deck.pop()];dl=[deck.pop(),deck.pop()];inplay=1;hands++;
+ chips-=bet;Arcade.beep(500,.06);document.getElementById('st').textContent='';
+ if(val(pl)===21)setTimeout(stand,400);
+ upd();}
+function hit(){ if(!inplay)return; pl.push(deck.pop());Arcade.beep(600,.05);
+ if(val(pl)>21){inplay=0;fin('💥 Te pasaste');}
+ upd();}
+function dbl(){ if(!inplay||pl.length!==2||chips<bet)return; chips-=bet;bet*=2;hit();if(inplay)stand();}
+function stand(){ if(!inplay)return; inplay=0;
+ while(val(dl)<17)dl.push(deck.pop());
+ const p=val(pl),d=val(dl);
+ const bjP=p===21&&pl.length===2, bjD=d===21&&dl.length===2;
+ if(bjP&&!bjD){chips+=bet*2.5;fin('🃏 ¡BLACKJACK! +'+(bet*1.5));}
+ else if(d>21||p>d){chips+=bet*2;fin('🏆 Ganas +'+bet);}
+ else if(p===d){chips+=bet;fin('🤝 Empate');}
+ else fin('❌ Gana el crupier');
+ upd();}
+function fin(m){document.getElementById('st').textContent=m;Arcade.beep(m.includes('Gana')||m.includes('BLACK')?1000:180,.2);
+ if(bet>10)bet=Math.max(10,bet/2);}
+function card(c,hidden){const d=document.createElement('div');
+ d.className='card'+(hidden?' back':(['♥','♦'].includes(c.s)?' red':''));
+ d.innerHTML=hidden?'':'<div>'+c.r+c.s+'</div><div style="text-align:right">'+c.r+c.s+'</div>';return d;}
+function upd(){
+ const D=document.getElementById('dh'),P=document.getElementById('ph');D.innerHTML='';P.innerHTML='';
+ if(pl){pl.forEach(c=>P.appendChild(card(c)));
+  dl.forEach((c,i)=>D.appendChild(card(c,inplay&&i===1)));
+  document.getElementById('pv').textContent=val(pl);
+  document.getElementById('dv').textContent=inplay?val([dl[0]]):val(dl);}
+ document.getElementById('ch').textContent=Math.floor(chips);
+ document.getElementById('bet').textContent=bet;
+ document.getElementById('hs').textContent=hands;}
+shuffle();upd();</script></body></html>

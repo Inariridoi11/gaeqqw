@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🟩 Adivina la palabra</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🟩 Adivina la palabra</h1></header><main>
+<style>#g{display:grid;grid-template-rows:repeat(6,1fr);gap:6px}
+.row5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.lt{width:clamp(40px,13vw,58px);aspect-ratio:1;border:2px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,6vw,28px);font-weight:bold}
+.ok2{background:#3fbf85;border-color:#3fbf85}.mid{background:#e8b53d;border-color:#e8b53d;color:#111}.no{background:#2a3044;border-color:#2a3044;color:#6b748f}
+#kbd{display:flex;flex-direction:column;gap:6px;margin-top:14px;align-items:center}
+#kbd div{display:flex;gap:4px}
+#kbd button{padding:10px 8px;font-size:13px;min-width:30px}</style>
+<div class="hud"><span>Intento <b id="n">1</b>/6</span><span>Ganadas <b id="wn">0</b></span><span id="st"></span></div>
+<div id="g"></div><div id="kbd"></div>
+<div class="row" style="margin-top:12px"><button class="btn" onclick="init()">Nueva palabra</button></div>
+<p class="help">Adivina la palabra de 5 letras. 🟩 letra correcta, 🟨 está pero en otro sitio.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const W=["CASAS","PERRO","GATOS","MESAS","LIBRO","VERDE","NEGRO","PLAYA","NUBES","FUEGO","TIGRE","RATON","BARCO","PIANO","LUCES","FLORE","CIELO","TIERR","MUNDO","JUEGO","CARTA","PUNTO","NOCHE","TARDE","SALTO","RISAS","VIAJE","CAMPO","FRUTA","LECHE","QUESO","PASTA","SOPAS","HIELO","CALOR","VIENT","LLUVI","NIEVE","RAYOS","TRUEN","MONTE","VALLE","COSTA","ISLAS","PUENT","TORRE","PLAZA","CALLE","METRO","TAXIS"];
+let sol,rows,cur,wins=0,over;
+function init(){sol=W[Math.random()*W.length|0];rows=[];cur='';over=0;
+ document.getElementById('st').textContent='';draw();kbd();}
+function key(l){ if(over)return;
+ if(l==='⌫'){cur=cur.slice(0,-1);}
+ else if(l==='ENTER'){ if(cur.length!==5)return;
+  rows.push(cur);Arcade.beep(500,.06);
+  if(cur===sol){over=1;wins++;document.getElementById('wn').textContent=wins;
+   document.getElementById('st').textContent='🏆 ¡Correcto!';Arcade.beep(1200,.3);}
+  else if(rows.length>=6){over=1;document.getElementById('st').textContent='Era: '+sol;Arcade.beep(140,.3);}
+  cur='';}
+ else if(cur.length<5)cur+=l;
+ draw();}
+addEventListener('keydown',e=>{const l=e.key.toUpperCase();
+ if(l==='BACKSPACE')key('⌫'); else if(l==='ENTER')key('ENTER'); else if(/^[A-ZÑ]$/.test(l))key(l);});
+function mark(guess){const res=Array(5).fill('no'),used=Array(5).fill(0);
+ for(let i=0;i<5;i++)if(guess[i]===sol[i]){res[i]='ok2';used[i]=1;}
+ for(let i=0;i<5;i++){ if(res[i]==='ok2')continue;
+  for(let j=0;j<5;j++)if(!used[j]&&sol[j]===guess[i]){res[i]='mid';used[j]=1;break;}}
+ return res;}
+function draw(){const g=document.getElementById('g');g.innerHTML='';
+ for(let r=0;r<6;r++){const d=document.createElement('div');d.className='row5';
+  const guess=rows[r]!==undefined?rows[r]:(r===rows.length?cur.padEnd(5):'     ');
+  const res=rows[r]!==undefined?mark(rows[r]):null;
+  for(let i=0;i<5;i++){const t=document.createElement('div');
+   t.className='lt'+(res?' '+res[i]:'');t.textContent=guess[i]===' '?'':guess[i];d.appendChild(t);}
+  g.appendChild(d);}
+ document.getElementById('n').textContent=Math.min(6,rows.length+1);
+ kbdColors();}
+function kbd(){const k=document.getElementById('kbd');k.innerHTML='';
+ ['QWERTYUIOP','ASDFGHJKLÑ','ZXCVBNM'].forEach((row,i)=>{
+  const d=document.createElement('div');
+  if(i===2){const b=document.createElement('button');b.className='btn';b.textContent='ENTER';b.onclick=()=>key('ENTER');d.appendChild(b);}
+  row.split('').forEach(l=>{const b=document.createElement('button');b.className='btn';b.dataset.l=l;b.textContent=l;b.onclick=()=>key(l);d.appendChild(b);});
+  if(i===2){const b=document.createElement('button');b.className='btn';b.textContent='⌫';b.onclick=()=>key('⌫');d.appendChild(b);}
+  k.appendChild(d);});}
+function kbdColors(){const st={};
+ for(const g of rows){const m=mark(g);
+  g.split('').forEach((l,i)=>{const v=m[i];
+   if(v==='ok2'||(v==='mid'&&st[l]!=='ok2')||!st[l])st[l]=st[l]==='ok2'?'ok2':v;});}
+ document.querySelectorAll('#kbd button[data-l]').forEach(b=>{
+  const v=st[b.dataset.l];b.style.background=v==='ok2'?'#3fbf85':v==='mid'?'#e8b53d':v==='no'?'#2a3044':'';
+  b.style.color=v==='mid'?'#111':'';});}
+init();</script></body></html>

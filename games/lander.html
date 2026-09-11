@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌙 Alunizaje</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🌙 Alunizaje</h1></header><main>
+<div class="hud"><span>Combustible <b id="f">100</b></span><span>Vel <b id="v">0</b></span><span>Puntos <b id="s">0</b></span><span id="st"></span></div>
+<canvas id="c" width="700" height="460"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">↑ propulsor, ← → girar. Aterriza en las plataformas 🟩 lento y recto.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),X=c.getContext('2d');
+let sh,ter,pads,fuel,score,state,k={},lvl;
+function init(){lvl=1;score=0;gen();}
+function gen(){ter=[];let h=340;
+ for(let i=0;i<=700;i+=10){h+=(Math.random()-.5)*60;h=Math.max(200,Math.min(430,h));ter.push(h);}
+ pads=[];for(let p=0;p<Math.max(1,4-lvl);p++){const i=6+Math.random()*(ter.length-14)|0;
+  const y=ter[i];for(let j=i;j<i+4;j++)ter[j]=y;pads.push({i,y,w:4,mult:p+1});}
+ sh={x:60+Math.random()*80,y:40,vx:18+Math.random()*20,vy:0,a:0};fuel=100;state='fly';
+ document.getElementById('st').textContent='Nivel '+lvl;}
+addEventListener('keydown',e=>{k[e.key]=1;if(e.key===' '&&state!=='fly'){state==='win'?(lvl++,gen()):gen();}});
+addEventListener('keyup',e=>k[e.key]=0);
+c.ontouchstart=()=>k.ArrowUp=1;c.ontouchend=()=>k.ArrowUp=0;
+function gy(px){const i=Math.max(0,Math.min(ter.length-1,Math.round(px/10)));return ter[i];}
+Arcade.loop(dt=>{
+ if(state==='fly'){
+  if(k.ArrowLeft)sh.a-=1.8*dt; if(k.ArrowRight)sh.a+=1.8*dt;
+  if(k.ArrowUp&&fuel>0){sh.vx+=Math.sin(sh.a)*52*dt;sh.vy-=Math.cos(sh.a)*52*dt;fuel-=16*dt;
+   if(Math.random()<.4)Arcade.beep(110,.03,'sawtooth',.02);}
+  sh.vy+=17*dt; sh.x+=sh.vx*dt; sh.y+=sh.vy*dt;
+  if(sh.x<0)sh.x=700; if(sh.x>700)sh.x=0;
+  const g=gy(sh.x);
+  if(sh.y>g-12){
+   const i=Math.round(sh.x/10), pad=pads.find(p=>i>=p.i&&i<=p.i+p.w);
+   const ok=pad&&Math.abs(sh.vy)<26&&Math.abs(sh.vx)<16&&Math.abs(sh.a)<.25;
+   if(ok){state='win';score+=Math.round(100*pad.mult+fuel*2);Arcade.beep(1100,.4);
+    document.getElementById('st').textContent='🎉 ¡Alunizaje! +'+Math.round(100*pad.mult+fuel*2)+' (ESPACIO)';}
+   else{state='crash';Arcade.beep(90,.5,'sawtooth');
+    document.getElementById('st').textContent='💥 Estrellado (ESPACIO para reintentar)';}
+   sh.y=g-12;}
+ }
+ X.fillStyle='#05060a';X.fillRect(0,0,700,460);
+ for(let i=0;i<60;i++)X.fillRect((i*137)%700,(i*79)%200,2,2);
+ X.fillStyle='#2a2f42';X.beginPath();X.moveTo(0,460);
+ ter.forEach((h,i)=>X.lineTo(i*10,h));X.lineTo(700,460);X.fill();
+ for(const p of pads){X.fillStyle='#5ee0a0';X.fillRect(p.i*10,p.y-3,p.w*10,6);
+  X.fillStyle='#94a0bd';X.font='10px monospace';X.fillText('x'+p.mult,p.i*10+8,p.y-8);}
+ X.save();X.translate(sh.x,sh.y);X.rotate(sh.a);
+ X.fillStyle=state==='crash'?'#ff6b6b':'#cbd5f0';
+ X.beginPath();X.moveTo(0,-12);X.lineTo(9,6);X.lineTo(-9,6);X.closePath();X.fill();
+ X.strokeStyle='#94a0bd';X.lineWidth=2;X.beginPath();X.moveTo(-7,6);X.lineTo(-11,13);X.moveTo(7,6);X.lineTo(11,13);X.stroke();
+ if(k.ArrowUp&&fuel>0&&state==='fly'){X.fillStyle='#ff9e4a';X.beginPath();X.moveTo(-5,7);X.lineTo(0,7+Math.random()*14+6);X.lineTo(5,7);X.fill();}
+ X.restore();
+ document.getElementById('f').textContent=Math.max(0,Math.round(fuel));
+ document.getElementById('v').textContent=Math.round(Math.hypot(sh.vx,sh.vy));
+ document.getElementById('s').textContent=score;});
+init();</script></body></html>

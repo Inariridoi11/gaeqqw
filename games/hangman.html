@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔤 Ahorcado</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🔤 Ahorcado</h1></header><main>
+<style>#w{font-size:clamp(20px,7vw,40px);letter-spacing:8px;margin:6px 0}
+#kb{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;width:min(92vw,460px)}
+#kb button{padding:10px 0;font-size:15px}
+.used{opacity:.3}</style>
+<div class="hud"><span>Fallos <b id="f">0</b>/6</span><span>Ganadas <b id="wn">0</b></span><span>Categoría <b id="cat">—</b></span></div>
+<canvas id="c" width="240" height="220"></canvas>
+<div id="w"></div><div id="kb"></div>
+<div class="row"><button class="btn" onclick="init()">Nueva palabra</button></div>
+<p class="help">Adivina la palabra letra a letra. Seis fallos y pierdes.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const WORDS=[["ELEFANTE","animales"],["JIRAFA","animales"],["COCODRILO","animales"],["MURCIELAGO","animales"],
+["GUITARRA","musica"],["TROMPETA","musica"],["VIOLONCHELO","musica"],["BATERIA","musica"],
+["ORDENADOR","tecnologia"],["TECLADO","tecnologia"],["PANTALLA","tecnologia"],["ALGORITMO","tecnologia"],
+["MADRID","ciudades"],["BARCELONA","ciudades"],["ESTAMBUL","ciudades"],["TOKIO","ciudades"],
+["PARAGUAS","objetos"],["BICICLETA","objetos"],["LINTERNA","objetos"],["ESCALERA","objetos"],
+["MONTANA","naturaleza"],["VOLCAN","naturaleza"],["CASCADA","naturaleza"],["DESIERTO","naturaleza"]];
+const c=document.getElementById('c'),x=c.getContext('2d');
+let word,cat,found,fails,wins=0;
+function init(){const [a,b]=WORDS[Math.random()*WORDS.length|0];word=a;cat=b;found=new Set();fails=0;
+ document.getElementById('cat').textContent=cat;kb();draw();}
+function kb(){const e=document.getElementById('kb');e.innerHTML='';
+ 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'.split('').forEach(l=>{const b=document.createElement('button');
+  b.className='btn';b.textContent=l;b.onclick=()=>guess(l);e.appendChild(b);});}
+function guess(l){ if(found.has(l)||fails>=6||won())return; found.add(l);
+ if(word.includes(l))Arcade.beep(800,.07); else {fails++;Arcade.beep(180,.2);}
+ [...document.getElementById('kb').children].forEach(b=>{if(found.has(b.textContent))b.classList.add('used');});
+ draw();
+ if(won()){wins++;document.getElementById('wn').textContent=wins;Arcade.beep(1200,.3);}}
+function won(){return word.split('').every(l=>found.has(l));}
+addEventListener('keydown',e=>{const l=e.key.toUpperCase();if(/^[A-ZÑ]$/.test(l))guess(l);});
+function draw(){
+ document.getElementById('w').textContent=word.split('').map(l=>found.has(l)?l:'_').join(' ');
+ document.getElementById('f').textContent=fails;
+ x.fillStyle='#0b0d14';x.fillRect(0,0,240,220);
+ x.strokeStyle='#94a0bd';x.lineWidth=4;x.beginPath();
+ x.moveTo(20,200);x.lineTo(140,200);x.moveTo(60,200);x.lineTo(60,30);x.lineTo(150,30);x.lineTo(150,55);x.stroke();
+ x.strokeStyle='#ff6b6b';x.beginPath();
+ if(fails>0){x.arc(150,75,20,0,7);}
+ if(fails>1){x.moveTo(150,95);x.lineTo(150,145);}
+ if(fails>2){x.moveTo(150,105);x.lineTo(125,130);}
+ if(fails>3){x.moveTo(150,105);x.lineTo(175,130);}
+ if(fails>4){x.moveTo(150,145);x.lineTo(128,180);}
+ if(fails>5){x.moveTo(150,145);x.lineTo(172,180);}
+ x.stroke();
+ if(fails>=6){x.fillStyle='#ff6b6b';x.font='bold 16px monospace';x.fillText('Era: '+word,20,25);}
+ if(won()){x.fillStyle='#5ee0a0';x.font='bold 18px monospace';x.fillText('¡GANASTE!',20,25);}}
+init();</script></body></html>

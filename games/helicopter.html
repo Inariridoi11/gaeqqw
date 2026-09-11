@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🚁 Helicóptero</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🚁 Helicóptero</h1></header><main>
+<div class="hud"><span>Distancia <b id="s">0</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="700" height="380"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Mantén pulsado (ratón/ESPACIO/toque) para subir. Esquiva el túnel y los bloques.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let y,vy,up,walls,blocks,dist,dead,gap,mid;
+function init(){y=190;vy=0;up=0;walls=[];blocks=[];dist=0;dead=0;gap=170;mid=190;
+ for(let i=0;i<72;i++)walls.push({t:190-gap/2,b:190+gap/2});}
+addEventListener('keydown',e=>{if(e.code==='Space'){up=1;e.preventDefault();if(dead)init();}});
+addEventListener('keyup',e=>{if(e.code==='Space')up=0;});
+c.onmousedown=()=>{up=1;if(dead)init();};addEventListener('mouseup',()=>up=0);
+c.ontouchstart=e=>{up=1;if(dead)init();e.preventDefault();};c.ontouchend=()=>up=0;
+Arcade.loop(dt=>{
+ if(!dead){
+  dist+=dt*60;
+  vy+=(up?-560:460)*dt; vy=Math.max(-260,Math.min(320,vy)); y+=vy*dt;
+  const steps=Math.round(340*dt/10);
+  for(let k=0;k<Math.max(1,steps);k++){
+   walls.shift();
+   mid+=(Math.random()-.5)*14; mid=Math.max(80+gap/2,Math.min(300-gap/2,mid));
+   gap=Math.max(96,170-dist/90);
+   walls.push({t:mid-gap/2,b:mid+gap/2});}
+  for(const b of blocks)b.x-=340*dt;
+  blocks=blocks.filter(b=>b.x>-40);
+  if(Math.random()<dt*1.1)blocks.push({x:720,y:walls[71].t+20+Math.random()*(gap-60),w:22,h:44});
+  const w=walls[8];
+  if(y<w.t+8||y>w.b-8){dead=1;Arcade.beep(110,.4);}
+  for(const b of blocks)if(Math.abs(b.x-80)<20&&y>b.y&&y<b.y+b.h){dead=1;Arcade.beep(110,.4);}
+ }
+ x.fillStyle='#0b0d14';x.fillRect(0,0,700,380);
+ x.fillStyle='#2b3450';
+ walls.forEach((w,i)=>{x.fillRect(i*10,0,10,w.t);x.fillRect(i*10,w.b,10,380-w.b);});
+ x.fillStyle='#3a4468';
+ walls.forEach((w,i)=>{x.fillRect(i*10,w.t-4,10,4);x.fillRect(i*10,w.b,10,4);});
+ x.fillStyle='#ff6b6b';for(const b of blocks)x.fillRect(b.x,b.y,b.w,b.h);
+ x.fillStyle='#ffd166';x.fillRect(66,y-7,30,14);
+ x.fillRect(58,y-2,10,5);
+ x.fillStyle='#94a0bd';const bl=Math.sin(performance.now()/12)*18;
+ x.fillRect(80-bl/2,y-14,bl,3);x.fillRect(79,y-14,3,8);
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,700,380);x.fillStyle='#ff6b6b';x.font='bold 26px monospace';x.textAlign='center';
+  x.fillText('¡CHOCASTE!',350,180);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('Clic o ESPACIO para reiniciar',350,210);x.textAlign='left';}
+ s.textContent=Math.floor(dist);b.textContent=Arcade.best('heli',Math.floor(dist));});
+init();</script></body></html>

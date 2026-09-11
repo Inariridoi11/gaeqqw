@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌈 Color Match</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🌈 Color Match</h1></header><main>
+<style>#word{font-size:clamp(36px,12vw,72px);font-weight:bold;margin:20px 0}
+#ops{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:min(90vw,420px)}
+#ops button{padding:18px;font-size:16px}</style>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vidas <b id="v">3</b></span><span>Tiempo <b id="t">3.0</b></span><span>Récord <b id="b">0</b></span></div>
+<div id="word">—</div><div id="ops"></div>
+<div class="row" style="margin-top:12px"><button class="btn" onclick="init()">Empezar</button></div>
+<p class="help">¿De qué COLOR está escrita la palabra? (no lo que dice). Cada acierto acelera el reloj.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const C=[['ROJO','#ff4d4d'],['VERDE','#3fbf85'],['AZUL','#4d8dff'],['AMARILLO','#e8d24a'],['MORADO','#b06bd6'],['NARANJA','#e89a4a']];
+let score,lives,limit,left,cur,run,iv;
+function init(){score=0;lives=3;limit=3;run=1;next();
+ clearInterval(iv);iv=setInterval(()=>{ if(!run)return; left-=0.1;
+  document.getElementById('t').textContent=Math.max(0,left).toFixed(1);
+  if(left<=0)miss();},100);}
+function next(){const w=C[Math.random()*C.length|0],c=C[Math.random()*C.length|0];
+ cur=c; const e=document.getElementById('word');
+ e.textContent=w[0];e.style.color=c[1];
+ left=limit;
+ const ops=[...C].sort(()=>Math.random()-.5).slice(0,4);
+ if(!ops.includes(c))ops[0]=c;
+ ops.sort(()=>Math.random()-.5);
+ const O=document.getElementById('ops');O.innerHTML='';
+ ops.forEach(o=>{const b=document.createElement('button');b.className='btn';b.textContent=o[0];
+  b.style.borderColor=o[1];b.onclick=()=>answer(o);O.appendChild(b);});}
+function answer(o){ if(!run)return;
+ if(o[1]===cur[1]){score+=10;limit=Math.max(1,limit-0.06);Arcade.beep(900,.06);
+  document.getElementById('s').textContent=score;next();}
+ else miss();}
+function miss(){lives--;Arcade.beep(180,.2);
+ document.getElementById('v').textContent=Math.max(0,lives);
+ if(lives<=0){run=0;clearInterval(iv);document.getElementById('b').textContent=Arcade.best('stroop',score);
+  document.getElementById('word').textContent='FIN';document.getElementById('word').style.color='#ff6b6b';}
+ else next();}
+document.getElementById('b').textContent=Arcade.best('stroop',0);
+</script></body></html>

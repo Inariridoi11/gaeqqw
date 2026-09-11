@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🐍 Snake</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🐍 Snake</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Récord <b id="b">0</b></span><span>Vel <b id="v">1</b></span></div>
+<canvas id="c" width="440" height="440"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Flechas o WASD. Come manzanas, evita morderte y las paredes.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d'),N=22,S=c.width/N;
+let sn,dir,nd,food,score,alive,acc,speed;
+function init(){sn=[{x:11,y:11},{x:10,y:11},{x:9,y:11}];dir={x:1,y:0};nd=dir;score=0;alive=1;acc=0;speed=8;place();}
+function place(){do{food={x:Math.random()*N|0,y:Math.random()*N|0};}while(sn.some(s=>s.x===food.x&&s.y===food.y));}
+addEventListener('keydown',e=>{const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+ const v=m[e.key]; if(v){if(v[0]!==-dir.x||v[1]!==-dir.y)nd={x:v[0],y:v[1]};e.preventDefault();}
+ if(!alive&&e.key===' ')init();});
+let sx,sy;c.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;});
+c.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+ if(Math.abs(dx)>Math.abs(dy)){if(dx>0&&dir.x!==-1)nd={x:1,y:0};else if(dx<0&&dir.x!==1)nd={x:-1,y:0};}
+ else{if(dy>0&&dir.y!==-1)nd={x:0,y:1};else if(dy<0&&dir.y!==1)nd={x:0,y:-1};}});
+function step(){dir=nd;const h={x:sn[0].x+dir.x,y:sn[0].y+dir.y};
+ if(h.x<0||h.y<0||h.x>=N||h.y>=N||sn.some(s=>s.x===h.x&&s.y===h.y)){alive=0;Arcade.beep(90,.3);return;}
+ sn.unshift(h);
+ if(h.x===food.x&&h.y===food.y){score+=10;Arcade.beep(880,.06);place();speed=Math.min(20,8+score/60);}else sn.pop();}
+Arcade.loop(dt=>{ if(alive){acc+=dt;if(acc>1/speed){acc=0;step();}}
+ x.fillStyle='#0b0d14';x.fillRect(0,0,c.width,c.height);
+ x.strokeStyle='#171c2b';for(let i=0;i<=N;i++){x.beginPath();x.moveTo(i*S,0);x.lineTo(i*S,c.height);x.moveTo(0,i*S);x.lineTo(c.width,i*S);x.stroke();}
+ x.fillStyle='#ff6b6b';x.beginPath();x.arc(food.x*S+S/2,food.y*S+S/2,S/2.6,0,7);x.fill();
+ sn.forEach((s,i)=>{x.fillStyle=i?`hsl(150,60%,${45-Math.min(25,i)}%)`:'#5ee0a0';x.fillRect(s.x*S+1,s.y*S+1,S-2,S-2);});
+ if(!alive){x.fillStyle='rgba(0,0,0,.7)';x.fillRect(0,0,c.width,c.height);x.fillStyle='#ff6b6b';x.font='bold 26px monospace';x.textAlign='center';
+  x.fillText('GAME OVER',c.width/2,c.height/2);x.fillStyle='#94a0bd';x.font='13px monospace';x.fillText('ESPACIO para reiniciar',c.width/2,c.height/2+28);}
+ document.getElementById('s').textContent=score;document.getElementById('b').textContent=Arcade.best('snake',score);
+ document.getElementById('v').textContent=speed.toFixed(1);});
+init();</script></body></html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🚀 Missile Command</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🚀 Missile Command</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Ciudades <b id="ct">6</b></span><span>Oleada <b id="w">1</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="700" height="460"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Haz clic para lanzar un interceptor. Protege las ciudades de los misiles enemigos.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let cities,inc,mine,boomz,score,wave,dead,ammo,spawnT;
+function init(){cities=[];for(let i=0;i<6;i++)cities.push({x:80+i*110,alive:1});
+ inc=[];mine=[];boomz=[];score=0;wave=1;dead=0;ammo=30;spawnT=0;}
+c.onclick=e=>{ if(dead){init();return;} if(ammo<=0)return;
+ const r=c.getBoundingClientRect(),tx=(e.clientX-r.left)*(700/r.width),ty=(e.clientY-r.top)*(460/r.height);
+ mine.push({x:350,y:430,tx,ty,vx:(tx-350),vy:(ty-430)});ammo--;Arcade.beep(700,.06);};
+c.ontouchstart=e=>{const t=e.touches[0];c.onclick({clientX:t.clientX,clientY:t.clientY});e.preventDefault();};
+Arcade.loop(dt=>{
+ if(!dead){
+  spawnT-=dt;
+  if(spawnT<=0){spawnT=Math.max(.5,2.2-wave*.12);
+   const sx=Math.random()*700, alive=cities.filter(q=>q.alive);
+   const t=alive.length?alive[Math.random()*alive.length|0].x:350;
+   inc.push({x:sx,y:0,tx:t,ty:430,sp:28+wave*7});}
+  for(const m of mine){const d=Math.hypot(m.tx-m.x,m.ty-m.y);
+   if(d<10){boomz.push({x:m.tx,y:m.ty,r:1,max:44});m.dead=1;Arcade.beep(300,.1);continue;}
+   m.x+=(m.tx-m.x)/d*420*dt;m.y+=(m.ty-m.y)/d*420*dt;}
+  mine=mine.filter(m=>!m.dead);
+  for(const m of inc){const d=Math.hypot(m.tx-m.x,m.ty-m.y);
+   m.x+=(m.tx-m.x)/d*m.sp*dt;m.y+=(m.ty-m.y)/d*m.sp*dt;
+   if(m.y>=430){boomz.push({x:m.x,y:430,r:1,max:36});m.dead=1;Arcade.beep(140,.2);
+    for(const q of cities)if(q.alive&&Math.abs(q.x-m.x)<34)q.alive=0;}}
+  for(const b of boomz){b.r+=70*dt;
+   for(const m of inc)if(!m.dead&&Math.hypot(m.x-b.x,m.y-b.y)<b.r){m.dead=1;score+=25;Arcade.beep(900,.05);}}
+  inc=inc.filter(m=>!m.dead);
+  boomz=boomz.filter(b=>b.r<b.max);
+  if(!cities.some(q=>q.alive))dead=1;
+  if(score>wave*450){wave++;ammo+=20;score+=100;}
+ }
+ x.fillStyle='#05060a';x.fillRect(0,0,700,460);
+ x.fillStyle='#1a2233';x.fillRect(0,430,700,30);
+ for(const q of cities){ x.fillStyle=q.alive?'#5ee0a0':'#3a2020';
+  x.fillRect(q.x-26,412,52,18); if(q.alive){x.fillRect(q.x-14,400,10,14);x.fillRect(q.x+6,396,10,18);} }
+ x.fillStyle='#7aa2ff';x.fillRect(340,412,20,18);
+ x.strokeStyle='#ff6b6b';x.lineWidth=2;
+ for(const m of inc){x.beginPath();x.moveTo(m.x-(m.tx-m.x)*.06,m.y-(m.ty-m.y)*.06);x.lineTo(m.x,m.y);x.stroke();
+  x.fillStyle='#ffd166';x.fillRect(m.x-2,m.y-2,4,4);}
+ x.strokeStyle='#5ee0a0';
+ for(const m of mine){x.beginPath();x.moveTo(350,430);x.lineTo(m.x,m.y);x.stroke();}
+ for(const b of boomz){x.fillStyle='rgba(255,'+(180-b.r*2|0)+',80,.8)';x.beginPath();x.arc(b.x,b.y,b.r,0,7);x.fill();}
+ x.fillStyle='#94a0bd';x.font='12px monospace';x.fillText('Misiles: '+ammo,12,20);
+ if(dead){x.fillStyle='rgba(0,0,0,.78)';x.fillRect(0,0,700,460);x.fillStyle='#ff6b6b';x.font='bold 30px monospace';x.textAlign='center';
+  x.fillText('CIUDADES DESTRUIDAS',350,220);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('Clic para reiniciar',350,252);x.textAlign='left';}
+ s.textContent=score;document.getElementById('ct').textContent=cities.filter(q=>q.alive).length;
+ w.textContent=wave;b.textContent=Arcade.best('missile',score);});
+init();</script></body></html>

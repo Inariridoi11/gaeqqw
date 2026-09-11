@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🏃 Runner infinito</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🏃 Runner infinito</h1></header><main>
+<div class="hud"><span>Distancia <b id="s">0</b>m</span><span>Monedas <b id="co">0</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="700" height="360"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">ESPACIO/↑ saltar (doble salto), ↓ deslizarse. ¡Esquiva y recoge monedas!</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d'),G=280;
+let p,obs,coins,dist,coin,dead,sp,spawn,k={};
+function init(){p={y:G,vy:0,jumps:0,slide:0};obs=[];coins=[];dist=0;coin=0;dead=0;sp=270;spawn=0;}
+function jump(){ if(dead){init();return;} if(p.jumps<2){p.vy=-450;p.jumps++;Arcade.beep(700,.05);} }
+addEventListener('keydown',e=>{ if(e.code==='Space'||e.key==='ArrowUp'){jump();e.preventDefault();}
+ if(e.key==='ArrowDown'){p.slide=.5;e.preventDefault();}});
+c.ontouchstart=e=>{jump();e.preventDefault();};
+Arcade.loop(dt=>{
+ if(!dead){
+  dist+=sp*dt/10; sp+=2.2*dt;
+  p.vy+=1250*dt; p.y+=p.vy*dt;
+  if(p.y>G){p.y=G;p.vy=0;p.jumps=0;}
+  p.slide=Math.max(0,p.slide-dt);
+  spawn-=dt;
+  if(spawn<=0){spawn=.55+Math.random()*.7;
+   const t=Math.random();
+   if(t<.45)obs.push({x:720,w:26,h:40,fly:0});
+   else if(t<.7)obs.push({x:720,w:34,h:26,fly:1});
+   else obs.push({x:720,w:52,h:26,fly:0});
+   if(Math.random()<.6)for(let i=0;i<3;i++)coins.push({x:790+i*34,y:G-60-Math.random()*70});}
+  for(const o of obs)o.x-=sp*dt;
+  for(const q of coins)q.x-=sp*dt;
+  obs=obs.filter(o=>o.x>-60);coins=coins.filter(q=>q.x>-30&&!q.got);
+  const ph=p.slide>0?22:44, py=p.y-ph;
+  for(const o of obs){const oy=o.fly?G-70:G-o.h;
+   if(60+26>o.x&&60<o.x+o.w&&py<oy+o.h&&p.y>oy){dead=1;Arcade.beep(110,.4);}}
+  for(const q of coins)if(Math.abs(q.x-70)<24&&Math.abs(q.y-(p.y-22))<32){q.got=1;coin++;Arcade.beep(1100,.05);}
+ }
+ const sky=x.createLinearGradient(0,0,0,360);sky.addColorStop(0,'#1b2740');sky.addColorStop(1,'#0d1220');
+ x.fillStyle=sky;x.fillRect(0,0,700,360);
+ for(let i=0;i<8;i++){x.fillStyle='#141c2e';const bx=((i*180-dist*2)%900+900)%900-100;
+  x.fillRect(bx,120+((i*37)%60),70,160);}
+ x.fillStyle='#1a2233';x.fillRect(0,G,700,80);
+ x.strokeStyle='#2e3a55';x.lineWidth=3;x.beginPath();
+ for(let i=0;i<700;i+=40){const off=((i-dist*8)%40+40)%40;x.moveTo(i-off,G+30);x.lineTo(i-off+22,G+30);}x.stroke();
+ for(const o of obs){const oy=o.fly?G-70:G-o.h;
+  x.fillStyle=o.fly?'#b06bd6':'#ff6b6b';x.fillRect(o.x,oy,o.w,o.h);}
+ for(const q of coins)if(!q.got){x.fillStyle='#ffd166';x.beginPath();x.arc(q.x,q.y,9,0,7);x.fill();
+  x.fillStyle='#e8b53d';x.beginPath();x.arc(q.x,q.y,5,0,7);x.fill();}
+ const ph=p.slide>0?22:44;
+ x.fillStyle='#5ee0a0';x.fillRect(60,p.y-ph,26,ph);
+ x.fillStyle='#e8cdb0';x.beginPath();x.arc(73,p.y-ph-6,10,0,7);x.fill();
+ const legs=Math.sin(performance.now()/60)*6;
+ x.strokeStyle='#5ee0a0';x.lineWidth=5;x.beginPath();
+ x.moveTo(68,p.y);x.lineTo(68-legs,p.y+ (p.y<G?-4:0));x.moveTo(78,p.y);x.lineTo(78+legs,p.y);x.stroke();
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,700,360);x.fillStyle='#ff6b6b';x.font='bold 28px monospace';x.textAlign='center';
+  x.fillText('¡CHOCASTE!',350,170);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO para reiniciar',350,200);x.textAlign='left';}
+ s.textContent=Math.floor(dist);co.textContent=coin;b.textContent=Arcade.best('runner',Math.floor(dist));});
+init();</script></body></html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>💥 Duelo de tanques</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>💥 Duelo de tanques</h1></header><main>
+<div class="hud"><span>Tú <b id="a">0</b></span><span>CPU <b id="b">0</b></span><span>Viento <b id="w">0</b></span><span id="st">Tu turno</span></div>
+<canvas id="c" width="700" height="420"></canvas>
+<div class="row">
+ <label style="font-size:12px">Ángulo <input id="ang" type="range" min="5" max="85" value="45"></label>
+ <label style="font-size:12px">Fuerza <input id="pow" type="range" min="20" max="100" value="60"></label>
+ <button class="btn" onclick="shoot()">¡Disparar!</button><button class="btn" onclick="init()">Nuevo terreno</button></div>
+<p class="help">Ajusta ángulo y fuerza. El viento afecta a la bala. Destruye el tanque enemigo.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let ter,t1,t2,bullet,turn,wind,sa=0,sb=0,busy;
+function init(){ter=[];let h=300;
+ for(let i=0;i<=700;i++){h+=(Math.random()-.5)*7;h=Math.max(180,Math.min(380,h));ter.push(h);}
+ for(let k=0;k<8;k++)ter=ter.map((v,i)=>(ter[Math.max(0,i-1)]+v+ter[Math.min(699,i+1)])/3);
+ t1={x:70,hp:100};t2={x:630,hp:100};bullet=null;turn=1;busy=0;
+ wind=(Math.random()*8-4);document.getElementById('w').textContent=wind.toFixed(1);
+ document.getElementById('st').textContent='Tu turno';}
+function gy(i){return ter[Math.max(0,Math.min(699,Math.round(i)))];}
+function shoot(){ if(bullet||busy||turn!==1)return;
+ const a=+document.getElementById('ang').value,p=+document.getElementById('pow').value;
+ fire(t1.x,gy(t1.x)-14,a,p,1);}
+function fire(px,py,ang,pow,who){
+ const r=ang*Math.PI/180, dir=who===1?1:-1;
+ bullet={x:px,y:py,vx:Math.cos(r)*pow*4.4*dir,vy:-Math.sin(r)*pow*4.4,who};
+ Arcade.beep(200,.12,'sawtooth');busy=1;}
+function boom(bx,by,who){
+ for(let i=-26;i<=26;i++){const idx=Math.round(bx)+i;
+  if(idx>=0&&idx<700)ter[idx]+=Math.sqrt(Math.max(0,26*26-i*i))*0.8;}
+ const tgt=who===1?t2:t1, self=who===1?t1:t2;
+ const d=Math.hypot(bx-tgt.x,by-(gy(tgt.x)-10));
+ if(d<38){tgt.hp-=Math.round(50-d*0.7);Arcade.beep(120,.35,'sawtooth');}
+ const ds=Math.hypot(bx-self.x,by-(gy(self.x)-10));
+ if(ds<30)self.hp-=15;
+ bullet=null;
+ if(t2.hp<=0){sa++;document.getElementById('a').textContent=sa;document.getElementById('st').textContent='🏆 ¡Ganaste!';busy=1;setTimeout(init,1800);return;}
+ if(t1.hp<=0){sb++;document.getElementById('b').textContent=sb;document.getElementById('st').textContent='💀 Te destruyeron';busy=1;setTimeout(init,1800);return;}
+ turn=3-turn; busy=0;
+ document.getElementById('st').textContent=turn===1?'Tu turno':'Turno CPU';
+ if(turn===2)setTimeout(cpu,900);}
+function cpu(){ if(t1.hp<=0||t2.hp<=0)return;
+ // busca ángulo/fuerza aproximando la distancia
+ const dist=Math.abs(t2.x-t1.x);
+ let ang=35+Math.random()*25, pow=Math.min(100,Math.sqrt(dist*9.5)/(Math.sin(2*ang*Math.PI/180)||.5)/3.2*8+Math.random()*8-4);
+ pow=Math.max(25,Math.min(100,pow*(1+(Math.random()-.5)*.15)));
+ fire(t2.x,gy(t2.x)-14,ang,pow,2);}
+Arcade.loop(dt=>{
+ if(bullet){ for(let k=0;k<3;k++){
+  bullet.vy+=260*dt/3; bullet.vx+=wind*12*dt/3;
+  bullet.x+=bullet.vx*dt/3; bullet.y+=bullet.vy*dt/3;
+  if(bullet.y>gy(bullet.x)||bullet.x<-40||bullet.x>740||bullet.y>460){
+   if(bullet.x<-40||bullet.x>740){bullet=null;turn=3-turn;busy=0;
+    document.getElementById('st').textContent=turn===1?'Tu turno (falló)':'Turno CPU';
+    if(turn===2)setTimeout(cpu,800);}
+   else boom(bullet.x,bullet.y,bullet.who);
+   break;} } }
+ const sky=x.createLinearGradient(0,0,0,420);sky.addColorStop(0,'#1a2440');sky.addColorStop(1,'#33405e');
+ x.fillStyle=sky;x.fillRect(0,0,700,420);
+ x.fillStyle='#2e4a2c';x.beginPath();x.moveTo(0,420);
+ for(let i=0;i<700;i++)x.lineTo(i,ter[i]); x.lineTo(700,420);x.fill();
+ x.fillStyle='#3d6138';x.beginPath();x.moveTo(0,420);
+ for(let i=0;i<700;i++)x.lineTo(i,ter[i]+4); x.lineTo(700,420);x.fill();
+ for(const [t,col,dir] of [[t1,'#5ee0a0',1],[t2,'#ff6b6b',-1]]){
+  const ty=gy(t.x);
+  x.fillStyle=col;x.fillRect(t.x-16,ty-14,32,12);
+  x.beginPath();x.arc(t.x,ty-14,10,Math.PI,0);x.fill();
+  const a=(t===t1?+document.getElementById('ang').value:40)*Math.PI/180;
+  x.strokeStyle=col;x.lineWidth=4;x.beginPath();x.moveTo(t.x,ty-20);
+  x.lineTo(t.x+Math.cos(a)*24*dir,ty-20-Math.sin(a)*24);x.stroke();
+  x.fillStyle='#0b0d14';x.fillRect(t.x-20,ty-34,40,7);
+  x.fillStyle=t.hp>40?'#5ee0a0':'#ff6b6b';x.fillRect(t.x-19,ty-33,38*Math.max(0,t.hp)/100,5);}
+ if(bullet){x.fillStyle='#ffd166';x.beginPath();x.arc(bullet.x,bullet.y,5,0,7);x.fill();}
+ x.fillStyle='#94a0bd';x.font='12px monospace';
+ x.fillText('Viento '+(wind>0?'→':'←')+' '+Math.abs(wind).toFixed(1),300,24);});
+init();</script></body></html>

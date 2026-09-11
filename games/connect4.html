@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔴 Conecta 4</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🔴 Conecta 4</h1></header><main>
+<div class="hud"><span>Turno <b id="t">Tú 🔴</b></span><span>Tú <b id="w1">0</b></span><span>CPU <b id="w2">0</b></span></div>
+<canvas id="c" width="490" height="440"></canvas>
+<div class="row"><button class="btn" onclick="init()">Nueva partida</button><button class="btn" onclick="depth=depth>=6?2:depth+2;alert('Profundidad IA: '+depth)">Dificultad</button></div>
+<p class="help">Haz clic en una columna. Alinea 4 fichas antes que la CPU.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d'),C=7,R=6,S=70;
+let g,turn,over,depth=4,sc1=0,sc2=0;
+function init(){g=Array.from({length:R},()=>Array(C).fill(0));turn=1;over=0;draw();}
+function drop(b,col,p){for(let r=R-1;r>=0;r--)if(!b[r][col]){b[r][col]=p;return r;}return -1;}
+function wins(b,p){
+ for(let r=0;r<R;r++)for(let i=0;i<C;i++)for(const[dr,dc]of[[0,1],[1,0],[1,1],[1,-1]]){
+  let n=0;for(let k=0;k<4;k++){const rr=r+dr*k,cc=i+dc*k;
+   if(rr<0||cc<0||rr>=R||cc>=C||b[rr][cc]!==p)break;n++;}
+  if(n===4)return true;}
+ return false;}
+function score(b,p){ let s=0;const o=3-p;
+ for(let r=0;r<R;r++)for(let i=0;i<C;i++)for(const[dr,dc]of[[0,1],[1,0],[1,1],[1,-1]]){
+  let mine=0,theirs=0,ok=1;
+  for(let k=0;k<4;k++){const rr=r+dr*k,cc=i+dc*k;
+   if(rr<0||cc<0||rr>=R||cc>=C){ok=0;break;}
+   if(b[rr][cc]===p)mine++;else if(b[rr][cc]===o)theirs++;}
+  if(!ok)continue;
+  if(mine&&!theirs)s+=[0,1,10,60,10000][mine];
+  if(theirs&&!mine)s-=[0,1,12,80,10000][theirs];}
+ return s;}
+function mini(b,d,a,be,p,me){
+ if(wins(b,me))return 1e6-d; if(wins(b,3-me))return -1e6+d;
+ if(d===0||b[0].every(v=>v))return score(b,me);
+ const cols=[3,2,4,1,5,0,6].filter(i=>!b[0][i]);
+ if(p===me){let best=-1e9;for(const i of cols){const nb=b.map(r=>r.slice());drop(nb,i,p);
+  best=Math.max(best,mini(nb,d-1,a,be,3-p,me));a=Math.max(a,best);if(be<=a)break;}return best;}
+ let best=1e9;for(const i of cols){const nb=b.map(r=>r.slice());drop(nb,i,p);
+  best=Math.min(best,mini(nb,d-1,a,be,3-p,me));be=Math.min(be,best);if(be<=a)break;}return best;}
+c.onclick=e=>{ if(over||turn!==1)return;
+ const r=c.getBoundingClientRect(),col=Math.floor((e.clientX-r.left)*(490/r.width)/S);
+ if(col<0||col>=C||g[0][col])return;
+ play(col,1);
+ if(!over)setTimeout(()=>{ let best=-1e9,pick=3;
+  for(const i of[3,2,4,1,5,0,6]){ if(g[0][i])continue; const nb=g.map(r=>r.slice());drop(nb,i,2);
+   const v=mini(nb,depth,-1e9,1e9,1,2); if(v>best){best=v;pick=i;} }
+  play(pick,2); },250);};
+function play(col,p){ const r=drop(g,col,p); if(r<0)return;
+ Arcade.beep(p===1?600:400,.08);
+ if(wins(g,p)){over=p;p===1?sc1++:sc2++;Arcade.beep(p===1?1200:150,.3);}
+ else if(g[0].every(v=>v))over=3;
+ turn=3-p;draw();}
+function draw(){
+ x.fillStyle='#1b2a6b';x.fillRect(0,0,490,440);
+ for(let r=0;r<R;r++)for(let i=0;i<C;i++){
+  x.fillStyle=g[r][i]===1?'#ff4d4d':g[r][i]===2?'#ffd166':'#0b0d14';
+  x.beginPath();x.arc(i*S+S/2,r*S+S/2+15,S/2-7,0,7);x.fill();}
+ if(over){x.fillStyle='rgba(0,0,0,.65)';x.fillRect(0,0,490,440);
+  x.fillStyle='#fff';x.font='bold 26px monospace';x.textAlign='center';
+  x.fillText(over===1?'¡GANAS! 🔴':over===2?'Gana la CPU 🟡':'Empate',245,220);x.textAlign='left';}
+ document.getElementById('t').textContent=over?'—':(turn===1?'Tú 🔴':'CPU 🟡');
+ document.getElementById('w1').textContent=sc1;document.getElementById('w2').textContent=sc2;}
+init();</script></body></html>

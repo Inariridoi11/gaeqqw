@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>⬜ Puntos y cajas</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>⬜ Puntos y cajas</h1></header><main>
+<div class="hud"><span>Tú <b id="a">0</b></span><span>CPU <b id="b">0</b></span><span id="st">Tu turno</span></div>
+<canvas id="c" width="480" height="480"></canvas>
+<div class="row"><button class="btn" onclick="init(4)">4x4</button><button class="btn" onclick="init(5)">5x5</button><button class="btn" onclick="init(6)">6x6</button></div>
+<p class="help">Haz clic entre dos puntos para trazar una línea. Cierra una caja y juegas otra vez.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let N,H,V,box,turn,sa,sb,over,S,off=40;
+function init(n){N=n;S=(480-off*2)/(N-1);
+ H=Array.from({length:N},()=>Array(N-1).fill(0));
+ V=Array.from({length:N-1},()=>Array(N).fill(0));
+ box=Array.from({length:N-1},()=>Array(N-1).fill(0));
+ turn=1;sa=sb=0;over=0;draw();}
+function closes(){let got=0;
+ for(let r=0;r<N-1;r++)for(let i=0;i<N-1;i++)
+  if(!box[r][i]&&H[r][i]&&H[r+1][i]&&V[r][i]&&V[r][i+1]){box[r][i]=turn;got++;turn===1?sa++:sb++;}
+ return got;}
+function line(t,r,i,p){
+ if(t==='h'){if(H[r][i])return 0;H[r][i]=p;}else{if(V[r][i])return 0;V[r][i]=p;}
+ return 1;}
+c.onclick=e=>{ if(over||turn!==1)return;
+ const b=c.getBoundingClientRect();
+ const mx=(e.clientX-b.left)*(480/b.width),my=(e.clientY-b.top)*(480/b.height);
+ let best=null,bd=22;
+ for(let r=0;r<N;r++)for(let i=0;i<N-1;i++){
+  const px=off+i*S+S/2,py=off+r*S;
+  if(!H[r][i]&&Math.hypot(mx-px,my-py)<bd){bd=Math.hypot(mx-px,my-py);best=['h',r,i];}}
+ for(let r=0;r<N-1;r++)for(let i=0;i<N;i++){
+  const px=off+i*S,py=off+r*S+S/2;
+  if(!V[r][i]&&Math.hypot(mx-px,my-py)<bd){bd=Math.hypot(mx-px,my-py);best=['v',r,i];}}
+ if(!best)return;
+ line(best[0],best[1],best[2],1);Arcade.beep(600,.05);
+ if(!closes())turn=2;
+ draw();
+ if(turn===2&&!over)setTimeout(cpu,420);};
+function freeLines(){const out=[];
+ for(let r=0;r<N;r++)for(let i=0;i<N-1;i++)if(!H[r][i])out.push(['h',r,i]);
+ for(let r=0;r<N-1;r++)for(let i=0;i<N;i++)if(!V[r][i])out.push(['v',r,i]);
+ return out;}
+function sides(r,i){return (H[r][i]?1:0)+(H[r+1][i]?1:0)+(V[r][i]?1:0)+(V[r][i+1]?1:0);}
+function wouldGive(m){ // ¿deja alguna caja con 3 lados?
+ const [t,r,i]=m; if(t==='h')H[r][i]=9;else V[r][i]=9;
+ let bad=0,good=0;
+ for(let a=0;a<N-1;a++)for(let b2=0;b2<N-1;b2++){
+  if(box[a][b2])continue; const s=sides(a,b2);
+  if(s===4)good++; if(s===3)bad++;}
+ if(t==='h')H[r][i]=0;else V[r][i]=0;
+ return {good,bad};}
+function cpu(){ let again=1;
+ while(again&&!over){ again=0;
+  const fl=freeLines(); if(!fl.length)break;
+  let pick=null;
+  const scored=fl.map(m=>({m,...wouldGive(m)}));
+  const win=scored.filter(s=>s.good>0).sort((a,b)=>b.good-a.good);
+  const safe=scored.filter(s=>s.bad===0);
+  pick=(win[0]||safe[Math.random()*safe.length|0]||scored[Math.random()*scored.length|0]).m;
+  line(pick[0],pick[1],pick[2],2);Arcade.beep(400,.05);
+  if(closes())again=1; }
+ turn=1;draw();}
+function draw(){
+ x.fillStyle='#0b0d14';x.fillRect(0,0,480,480);
+ for(let r=0;r<N-1;r++)for(let i=0;i<N-1;i++)if(box[r][i]){
+  x.fillStyle=box[r][i]===1?'#1f5e42':'#5e1f2f';
+  x.fillRect(off+i*S+3,off+r*S+3,S-6,S-6);
+  x.fillStyle='#e8ecf7';x.font='bold 16px monospace';x.textAlign='center';
+  x.fillText(box[r][i]===1?'T':'C',off+i*S+S/2,off+r*S+S/2+6);}
+ x.lineWidth=5;x.lineCap='round';
+ for(let r=0;r<N;r++)for(let i=0;i<N-1;i++){x.strokeStyle=H[r][i]?(H[r][i]===1?'#5ee0a0':'#ff6b6b'):'#1c2437';
+  x.beginPath();x.moveTo(off+i*S,off+r*S);x.lineTo(off+(i+1)*S,off+r*S);x.stroke();}
+ for(let r=0;r<N-1;r++)for(let i=0;i<N;i++){x.strokeStyle=V[r][i]?(V[r][i]===1?'#5ee0a0':'#ff6b6b'):'#1c2437';
+  x.beginPath();x.moveTo(off+i*S,off+r*S);x.lineTo(off+i*S,off+(r+1)*S);x.stroke();}
+ x.fillStyle='#cbd5f0';
+ for(let r=0;r<N;r++)for(let i=0;i<N;i++){x.beginPath();x.arc(off+i*S,off+r*S,5,0,7);x.fill();}
+ document.getElementById('a').textContent=sa;document.getElementById('b').textContent=sb;
+ if(!freeLines().length){over=1;document.getElementById('st').textContent=sa>sb?'🏆 ¡Ganas!':sa<sb?'Gana la CPU':'Empate';}
+ else document.getElementById('st').textContent=turn===1?'Tu turno':'Turno CPU';}
+init(5);</script></body></html>

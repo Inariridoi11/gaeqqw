@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Granny - Escape</title><link rel="stylesheet" href="../assets/arcade.css">
+<style>
+#wrap{position:relative;width:min(96vw,900px)}
+#view{width:100%;image-rendering:pixelated;background:#000}
+#mini{position:absolute;right:10px;top:10px;opacity:.75;border:1px solid #444;border-radius:4px}
+#msg{position:absolute;left:0;right:0;top:45%;text-align:center;font-size:22px;color:#ffd166;text-shadow:0 0 8px #000;pointer-events:none}
+#hp{position:absolute;left:12px;bottom:12px;font-size:13px;color:#fff;text-shadow:0 0 4px #000}
+.pad2{display:grid;grid-template-columns:repeat(3,58px);gap:6px;margin-top:10px}
+.pad2 button{height:52px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:18px}
+</style></head>
+<body>
+<header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>👵 Granny — Escape de la casa</h1></header>
+<main>
+ <div class="hud"><span>Día <b id="day">1</b>/5</span><span>Llaves <b id="keys">0</b>/3</span><span>Ruido <b id="noise">0</b>%</span><span id="st"></span></div>
+ <div id="wrap">
+   <canvas id="view" width="480" height="300"></canvas>
+   <canvas id="mini" width="120" height="120"></canvas>
+   <div id="msg"></div><div id="hp">Sigilo: mantén SHIFT para ir despacio</div>
+ </div>
+ <div class="row"><button class="btn" onclick="reset()">Reiniciar</button><button class="btn" onclick="hint()">Pista</button></div>
+ <div class="pad2">
+  <button ontouchstart="k.a=1" ontouchend="k.a=0">↺</button>
+  <button ontouchstart="k.w=1" ontouchend="k.w=0">▲</button>
+  <button ontouchstart="k.d=1" ontouchend="k.d=0">↻</button>
+  <button ontouchstart="k.q=1" ontouchend="k.q=0">◀</button>
+  <button ontouchstart="k.s=1" ontouchend="k.s=0">▼</button>
+  <button ontouchstart="k.e=1" ontouchend="k.e=0">▶</button>
+ </div>
+ <p class="help">WASD para moverte, ←/→ para girar, SHIFT sigilo, E para recoger/usar. Encuentra las 3 llaves y abre la puerta verde antes de que Granny te atrape. Si te pilla pierdes un día: tienes 5.</p>
+</main>
+<script>
+const MAP=`
+###############
+#....#....#...#
+#.##.#.##.#.#.#
+#.#.........#.#
+#.#.####.###..#
+#...#..#...#..#
+###.#.##.#.##.#
+#...#....#....#
+#.#####.####.##
+#.....#....#..#
+#.###.#.##.#..#
+#.#...#..#.#.##
+#.#.###..#....#
+#.............#
+###############`.trim().split("\n").map(r=>r.split(""));
+const H=MAP.length,W=MAP[0].length;
+const view=document.getElementById('view'),ctx=view.getContext('2d');
+const mini=document.getElementById('mini'),mc=mini.getContext('2d');
+let px,py,pa,keys,items,gr,noise,day,state,msg,mt,doorOpen,vel;
+const k={};
+addEventListener('keydown',e=>{sk(e,1); if(e.key==='e'||e.key==='E')use();});
+addEventListener('keyup',e=>sk(e,0));
+function sk(e,v){const m={w:'w',a:'q',s:'s',d:'e',ArrowLeft:'a',ArrowRight:'d',ArrowUp:'w',ArrowDown:'s',Shift:'sh'};
+  const t=m[e.key]||m[e.key.replace('Key','')]; if(t){k[t]=v;e.preventDefault();}
+  if(e.key==='w'||e.key==='W')k.w=v; if(e.key==='s'||e.key==='S')k.s=v;
+  if(e.key==='a'||e.key==='A')k.q=v; if(e.key==='d'||e.key==='D')k.e=v;}
+function wall(x,y){ if(x<0||y<0||x>=W||y>=H) return true; return MAP[y|0][x|0]==='#'; }
+function freeCell(){ let x,y; do{x=1+Math.random()*(W-2)|0;y=1+Math.random()*(H-2)|0;}while(MAP[y][x]==='#'); return {x:x+.5,y:y+.5}; }
+function reset(full){
+  if(full!==false){day=1;}
+  px=1.5;py=1.5;pa=0; noise=0; doorOpen=false; state='play'; msg=''; vel=0;
+  items=[]; for(let i=0;i<3;i++){const c=freeCell(); items.push({...c,type:'key',got:false});}
+  for(let i=0;i<4;i++){const c=freeCell(); items.push({...c,type:'noiseTrap'});}
+  keys=0;
+  let g; do{g=freeCell();}while(Math.hypot(g.x-px,g.y-py)<7);
+  gr={x:g.x,y:g.y,speed:0.9+day*0.08,path:[],cool:0,stun:0};
+  say('Día '+day+': encuentra 3 llaves 🔑');
+  upd();
+}
+function say(t,ms=2200){ msg=t; mt=performance.now()+ms; }
+function upd(){ document.getElementById('day').textContent=day;
+  document.getElementById('keys').textContent=keys;
+  document.getElementById('noise').textContent=Math.round(noise);}
+const DOOR={x:W-2.5,y:H-2.5};
+function use(){
+  if(state!=='play')return;
+  for(const it of items){ if(it.type==='key'&&!it.got&&Math.hypot(it.x-px,it.y-py)<0.8){ it.got=true;keys++;upd();say('¡Llave! ('+keys+'/3)');beep(880);return; } }
+  if(Math.hypot(DOOR.x-px,DOOR.y-py)<1.2){
+    if(keys>=3){ state='win'; say('¡ESCAPASTE! 🎉 Pulsa Reiniciar',9000); beep(1200,.3);}
+    else say('La puerta necesita 3 llaves');
+  }
+}
+function hint(){ const it=items.find(i=>i.type==='key'&&!i.got);
+  if(!it){say('Ve a la puerta verde: '+Math.round(DOOR.x)+','+Math.round(DOOR.y));return;}
+  const d=Math.hypot(it.x-px,it.y-py); say(d<4?'Muy cerca 🔥':d<8?'Templado...':'Frío ❄'); noise+=10; }
+function beep(f,d=.07){try{Arcade.beep(f,d,'square',.04)}catch(e){}}
+
+/* IA de Granny: BFS por la rejilla hacia el jugador (si oye ruido) o patrulla */
+function bfs(sx,sy,tx,ty){
+  const q=[[sx|0,sy|0]],prev=new Map(),seen=new Set([(sy|0)*W+(sx|0)]);
+  while(q.length){ const [x,y]=q.shift();
+    if(x===(tx|0)&&y===(ty|0)){ const path=[];let c=y*W+x;
+      while(prev.has(c)){ path.push([c%W+.5,(c/W|0)+.5]); c=prev.get(c);} return path.reverse(); }
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=x+dx,ny=y+dy,id=ny*W+nx;
+      if(nx<0||ny<0||nx>=W||ny>=H||MAP[ny][nx]==='#'||seen.has(id))continue;
+      seen.add(id);prev.set(id,y*W+x);q.push([nx,ny]); } }
+  return [];
+}
+function tick(dt){
+  if(state!=='play'){ return; }
+  // movimiento jugador
+  const slow=k.sh?0.45:1, sp=2.4*slow*dt, rot=2.4*dt;
+  if(k.a)pa-=rot; if(k.d)pa+=rot;
+  let mx=0,my=0;
+  if(k.w){mx+=Math.cos(pa)*sp;my+=Math.sin(pa)*sp;}
+  if(k.s){mx-=Math.cos(pa)*sp;my-=Math.sin(pa)*sp;}
+  if(k.q){mx+=Math.sin(pa)*sp;my-=Math.cos(pa)*sp;}
+  if(k.e){mx-=Math.sin(pa)*sp;my+=Math.cos(pa)*sp;}
+  const moving=Math.abs(mx)+Math.abs(my)>0.0001;
+  if(!wall(px+mx*1.6,py))px+=mx;
+  if(!wall(px,py+my*1.6))py+=my;
+  noise = Math.max(0, noise + (moving? (k.sh?4:26)*dt : -14*dt));
+  for(const it of items){ if(it.type==='key'&&!it.got&&Math.hypot(it.x-px,it.y-py)<0.55){it.got=true;keys++;upd();say('¡Llave! ('+keys+'/3)');beep(880);}
+   if(it.type==='noiseTrap'&&Math.hypot(it.x-px,it.y-py)<0.5&&!it.hit){ it.hit=true;noise=100;say('¡Trampa de ruido! 🔔');beep(200,.4);} }
+  noise=Math.min(100,noise);
+  // granny
+  gr.cool-=dt;
+  if(gr.cool<=0){
+    gr.cool=0.5;
+    const hears = noise>35 || Math.hypot(gr.x-px,gr.y-py)<3.5;
+    const tgt = hears? {x:px,y:py} : (gr.tgt&&Math.hypot(gr.x-gr.tgt.x,gr.y-gr.tgt.y)>1 ? gr.tgt : (gr.tgt=freeCell()));
+    gr.path=bfs(gr.x,gr.y,tgt.x,tgt.y);
+    gr.hunting=hears;
+  }
+  if(gr.path.length){
+    const [tx,ty]=gr.path[0]; const a=Math.atan2(ty-gr.y,tx-gr.x);
+    const s=(gr.hunting?gr.speed*1.25:gr.speed*0.6)*dt;
+    gr.x+=Math.cos(a)*s; gr.y+=Math.sin(a)*s;
+    if(Math.hypot(tx-gr.x,ty-gr.y)<0.15)gr.path.shift();
+  }
+  if(Math.hypot(gr.x-px,gr.y-py)<0.6){
+    day++; beep(90,.6);
+    if(day>5){ state='lose'; say('Granny te atrapó 5 veces… FIN',9000); }
+    else { say('¡Te pilló! Despiertas al día siguiente…',2600); const c=freeCell(); setTimeout(()=>{},0);
+      px=1.5;py=1.5; gr.x=c.x;gr.y=c.y; gr.speed+=0.08; noise=0; upd(); }
+  }
+}
+/* Render raycaster */
+function render(){
+  const w=view.width,h=view.height,fov=Math.PI/3;
+  const zb=new Array(w);
+  ctx.fillStyle='#0a0a10';ctx.fillRect(0,0,w,h/2);
+  const g=ctx.createLinearGradient(0,h/2,0,h);g.addColorStop(0,'#241c18');g.addColorStop(1,'#100c0a');
+  ctx.fillStyle=g;ctx.fillRect(0,h/2,w,h/2);
+  for(let x=0;x<w;x++){
+    const a=pa-fov/2+fov*x/w;
+    let d=0,hit=false,side=0;
+    const dx=Math.cos(a),dy=Math.sin(a);
+    while(d<20&&!hit){ d+=0.02; const cx=px+dx*d, cy=py+dy*d;
+      if(wall(cx,cy)){hit=true; side=(Math.abs(cx-Math.round(cx))<Math.abs(cy-Math.round(cy)))?0:1;} }
+    zb[x]=d;
+    const corr=d*Math.cos(a-pa), hh=Math.min(h, h/corr*0.9);
+    const shade=Math.max(0,1-corr/12)*(side?0.72:1);
+    ctx.fillStyle='rgb('+(90*shade|0)+','+(70*shade|0)+','+(60*shade|0)+')';
+    ctx.fillRect(x,(h-hh)/2,1,hh);
+  }
+  // sprites (llaves, puerta, granny)
+  const sprites=[];
+  for(const it of items) if(it.type==='key'&&!it.got) sprites.push({x:it.x,y:it.y,c:'#ffd166',s:0.35,max:0.3,t:'k'});
+  sprites.push({x:DOOR.x,y:DOOR.y,c:keys>=3?'#5ee0a0':'#3a6b4f',s:0.9,max:0.85,t:'d'});
+  sprites.push({x:gr.x,y:gr.y,c:'#d9d0c0',s:0.8,max:1.05,t:'g'});
+  sprites.sort((A,B)=>Math.hypot(B.x-px,B.y-py)-Math.hypot(A.x-px,A.y-py));
+  for(const s of sprites){
+    const ang=Math.atan2(s.y-py,s.x-px);
+    let rel=ang-pa; while(rel>Math.PI)rel-=2*Math.PI; while(rel<-Math.PI)rel+=2*Math.PI;
+    if(Math.abs(rel)>fov/1.5)continue;
+    const dist=Math.hypot(s.x-px,s.y-py); if(dist<0.2)continue;
+    const sx=(0.5+rel/fov)*w, size=Math.min(h*(s.max||0.8),h/dist*s.s);
+    const sy=h/2;
+    if(zb[Math.max(0,Math.min(w-1,sx|0))]<dist-0.1)continue;
+    ctx.globalAlpha=Math.max(.25,1-dist/14);
+    if(s.t==='g'){
+      ctx.fillStyle='#4a3c53';ctx.fillRect(sx-size/3,sy-size/2,size*0.66,size);      // vestido
+      ctx.fillStyle='#e8cdb0';ctx.beginPath();ctx.arc(sx,sy-size/2,size/4,0,7);ctx.fill(); // cara
+      ctx.fillStyle='#111';ctx.fillRect(sx-size/8,sy-size/2-size/24,size/14,size/14);
+      ctx.fillStyle='#111';ctx.fillRect(sx+size/16,sy-size/2-size/24,size/14,size/14);
+      ctx.fillStyle='#bbb';ctx.fillRect(sx-size/3,sy-size/1.9,size*0.66,size/12);     // pelo
+      ctx.fillStyle='#888';ctx.fillRect(sx+size/3,sy-size/4,size/12,size/2);          // bate
+    } else if(s.t==='k'){
+      ctx.fillStyle=s.c;ctx.beginPath();ctx.arc(sx,sy+size/3,size/3,0,7);ctx.fill();
+      ctx.fillRect(sx-size/12,sy+size/3,size/6,size/1.5);
+    } else {
+      ctx.fillStyle=s.c;ctx.fillRect(sx-size/2,sy-size,size,size*2);
+      ctx.fillStyle='#222';ctx.fillRect(sx-size/2,sy-size,size,size*2*0.08);
+      ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(sx+size/3,sy,size/12,0,7);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+  // viñeta + susto
+  const near=Math.hypot(gr.x-px,gr.y-py);
+  if(near<4){ ctx.fillStyle='rgba(120,0,0,'+(0.35*(1-near/4))+')'; ctx.fillRect(0,0,w,h); }
+  const vg=ctx.createRadialGradient(w/2,h/2,h/4,w/2,h/2,h);
+  vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.85)');
+  ctx.fillStyle=vg;ctx.fillRect(0,0,w,h);
+  // minimapa
+  mc.fillStyle='#000';mc.fillRect(0,0,120,120);
+  const s=120/Math.max(W,H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){ if(MAP[y][x]==='#'){mc.fillStyle='#333';mc.fillRect(x*s,y*s,s,s);} }
+  mc.fillStyle='#5ee0a0';mc.fillRect(DOOR.x*s-2,DOOR.y*s-2,4,4);
+  for(const it of items) if(it.type==='key'&&!it.got){mc.fillStyle='#ffd166';mc.fillRect(it.x*s-1.5,it.y*s-1.5,3,3);}
+  mc.fillStyle='#7aa2ff';mc.fillRect(px*s-2,py*s-2,4,4);
+  if(noise>35){mc.fillStyle='#ff5555';mc.fillRect(gr.x*s-2,gr.y*s-2,4,4);}
+  document.getElementById('st').textContent = state==='play'?(noise>60?'👀 ¡Te oye!':''):'';
+  document.getElementById('msg').textContent = performance.now()<mt?msg:(state!=='play'?msg:'');
+  if(state!=='play')document.getElementById('msg').textContent=msg;
+}
+reset();
+let last=performance.now();
+(function frame(t){ const dt=Math.min(.05,(t-last)/1000); last=t; tick(dt); render(); upd(); requestAnimationFrame(frame); })(last);
+</script><script src="../assets/arcade.js"></script>
+</body></html>

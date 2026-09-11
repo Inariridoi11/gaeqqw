@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧠 Memoria</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🧠 Memoria</h1></header><main>
+<style>#g{display:grid;gap:8px;width:min(92vw,480px)}
+.card{aspect-ratio:1;background:#2b3450;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:clamp(20px,7vw,34px);cursor:pointer;transition:.2s;transform-style:preserve-3d}
+.card.up{background:#182033;border:2px solid var(--acc2)}
+.card.done{background:#123a2a;border:2px solid var(--acc);cursor:default}
+.card:not(.up):not(.done){color:transparent}</style>
+<div class="hud"><span>Parejas <b id="p">0</b></span><span>Intentos <b id="t">0</b></span><span>Tiempo <b id="s">0</b>s</span></div>
+<div id="g"></div>
+<div class="row"><button class="btn" onclick="init(4)">4x4</button><button class="btn" onclick="init(6)">6x6</button><button class="btn" onclick="init(8)">8x8</button></div>
+<p class="help">Encuentra todas las parejas en el menor número de intentos.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const E=['🍎','🍌','🍇','🍒','🍋','🥝','🍑','🍓','🐶','🐱','🦊','🐼','🐸','🐙','🦄','🐝','⚽','🎸','🚀','🎲','🌵','🍄','⭐','🔥','🎈','🧩','🎁','🏀','🐧','🦋','🌈','🍩'];
+let cards,open,pairs,tries,lock,t0,timer;
+function init(n){clearInterval(timer);const need=n*n/2;
+ const pool=E.slice(0,need);cards=[...pool,...pool].sort(()=>Math.random()-.5).map(e=>({e,up:0,done:0}));
+ open=[];pairs=0;tries=0;lock=0;t0=Date.now();
+ timer=setInterval(()=>s.textContent=Math.floor((Date.now()-t0)/1000),500);
+ const g=document.getElementById('g');g.style.gridTemplateColumns=`repeat(${n},1fr)`;g.innerHTML='';
+ cards.forEach((c,i)=>{const d=document.createElement('div');d.className='card';d.textContent=c.e;d.onclick=()=>pick(i);g.appendChild(d);});
+ draw();}
+function pick(i){ if(lock||cards[i].up||cards[i].done)return;
+ cards[i].up=1;open.push(i);Arcade.beep(600,.05);draw();
+ if(open.length===2){tries++;lock=1;
+  const [a,b]=open;
+  if(cards[a].e===cards[b].e){cards[a].done=cards[b].done=1;pairs++;open=[];lock=0;Arcade.beep(1000,.1);draw();
+   if(cards.every(c=>c.done)){clearInterval(timer);setTimeout(()=>alert('¡Completado en '+tries+' intentos y '+Math.floor((Date.now()-t0)/1000)+'s!'),200);}}
+  else setTimeout(()=>{cards[a].up=cards[b].up=0;open=[];lock=0;draw();},700);}
+ draw();}
+function draw(){[...document.getElementById('g').children].forEach((d,i)=>{
+ d.className='card'+(cards[i].done?' done':cards[i].up?' up':'');});
+ p.textContent=pairs;t.textContent=tries;}
+init(4);</script></body></html>

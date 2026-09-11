@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔢 Puzzle 15</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🔢 Puzzle 15</h1></header><main>
+<style>#g{display:grid;gap:6px;width:min(88vw,420px)}
+.t{aspect-ratio:1;background:#2b3450;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,6vw,30px);font-weight:bold;cursor:pointer;transition:.08s}
+.t:hover{background:#3a4670}.empty{background:transparent;cursor:default}
+.good{background:#1f5e42}</style>
+<div class="hud"><span>Movimientos <b id="m">0</b></span><span>Tiempo <b id="t">0</b>s</span><span id="st"></span></div>
+<div id="g"></div>
+<div class="row"><button class="btn" onclick="init(3)">3x3</button><button class="btn" onclick="init(4)">4x4</button><button class="btn" onclick="init(5)">5x5</button></div>
+<p class="help">Ordena los números deslizando fichas al hueco. También funciona con flechas.</p></main>
+<script src="../assets/arcade.js"></script><script>
+let N,b,moves,t0,timer;
+function init(n){N=n||N||4;b=[...Array(N*N).keys()];moves=0;
+ do{ for(let i=b.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[b[i],b[j]]=[b[j],b[i]];} }while(!solvable()||done());
+ clearInterval(timer);t0=Date.now();
+ timer=setInterval(()=>document.getElementById('t').textContent=Math.floor((Date.now()-t0)/1000),500);
+ document.getElementById('st').textContent='';draw();}
+function solvable(){ let inv=0;const a=b.filter(v=>v);
+ for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++)if(a[i]>a[j])inv++;
+ if(N%2)return inv%2===0;
+ const row=N-((b.indexOf(0)/N|0));
+ return (inv+row)%2===0;}
+function done(){return b.every((v,i)=>v===(i+1)%(N*N));}
+function move(i){const z=b.indexOf(0);
+ if(Math.abs(i-z)===N||(Math.abs(i-z)===1&&(i/N|0)===(z/N|0))){
+  [b[i],b[z]]=[b[z],b[i]];moves++;Arcade.beep(500,.03);
+  if(done()){clearInterval(timer);document.getElementById('st').textContent='🏆 ¡Resuelto en '+moves+' movs!';Arcade.beep(1200,.3);}
+  draw();}}
+addEventListener('keydown',e=>{const z=b.indexOf(0);
+ const m={ArrowUp:z+N,ArrowDown:z-N,ArrowLeft:z+1,ArrowRight:z-1}[e.key];
+ if(m!==undefined&&m>=0&&m<N*N){move(m);e.preventDefault();}});
+function draw(){const g=document.getElementById('g');
+ g.style.gridTemplateColumns='repeat('+N+',1fr)';g.innerHTML='';
+ b.forEach((v,i)=>{const d=document.createElement('div');
+  d.className='t'+(v===0?' empty':(v===(i+1)%(N*N)?' good':''));
+  d.textContent=v||'';d.onclick=()=>move(i);g.appendChild(d);});
+ document.getElementById('m').textContent=moves;}
+init(4);</script></body></html>

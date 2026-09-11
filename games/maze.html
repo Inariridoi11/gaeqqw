@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌀 Laberinto</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🌀 Laberinto</h1></header><main>
+<div class="hud"><span>Nivel <b id="n">1</b></span><span>Tiempo <b id="t">0</b>s</span><span>Movs <b id="m">0</b></span><span id="st"></span></div>
+<canvas id="c" width="560" height="560"></canvas>
+<div class="row"><button class="btn" onclick="gen()">Nuevo laberinto</button><button class="btn" onclick="solve=!solve">Ver solución</button></div>
+<p class="help">Flechas/WASD o desliza. Llega a la salida verde lo antes posible.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let N,cells,px,py,lvl=1,moves,t0,solve=false,path;
+function idx(a,b){return b*N+a;}
+function gen(){N=8+lvl*2;
+ cells=Array.from({length:N*N},()=>({n:1,s:1,e:1,w:1,v:0}));
+ const st=[0];cells[0].v=1;
+ while(st.length){const cu=st[st.length-1],cx=cu%N,cy=cu/N|0;
+  const nb=[];
+  if(cy>0&&!cells[idx(cx,cy-1)].v)nb.push(['n',idx(cx,cy-1),'s']);
+  if(cy<N-1&&!cells[idx(cx,cy+1)].v)nb.push(['s',idx(cx,cy+1),'n']);
+  if(cx>0&&!cells[idx(cx-1,cy)].v)nb.push(['w',idx(cx-1,cy),'e']);
+  if(cx<N-1&&!cells[idx(cx+1,cy)].v)nb.push(['e',idx(cx+1,cy),'w']);
+  if(!nb.length){st.pop();continue;}
+  const [d,ni,od]=nb[Math.random()*nb.length|0];
+  cells[cu][d]=0;cells[ni][od]=0;cells[ni].v=1;st.push(ni);}
+ px=0;py=0;moves=0;t0=Date.now();path=null;
+ document.getElementById('st').textContent='';document.getElementById('n').textContent=lvl;}
+function mv(dx,dy){const i=idx(px,py);
+ if(dx===1&&cells[i].e)return; if(dx===-1&&cells[i].w)return;
+ if(dy===1&&cells[i].s)return; if(dy===-1&&cells[i].n)return;
+ px+=dx;py+=dy;moves++;Arcade.beep(420,.02);
+ if(px===N-1&&py===N-1){document.getElementById('st').textContent='🏆 ¡Salida! Nivel '+(lvl+1);
+  Arcade.beep(1100,.3);lvl++;setTimeout(gen,900);}}
+addEventListener('keydown',e=>{const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+ if(m[e.key]){mv(...m[e.key]);e.preventDefault();}});
+let sx,sy;c.ontouchstart=e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;};
+c.ontouchend=e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+ if(Math.abs(dx)>Math.abs(dy))mv(dx>0?1:-1,0);else mv(0,dy>0?1:-1);};
+function findPath(){const prev=new Map(),q=[idx(px,py)],seen=new Set(q);
+ while(q.length){const cu=q.shift();if(cu===N*N-1)break;
+  const cx=cu%N,cy=cu/N|0;
+  const nb=[];
+  if(!cells[cu].n)nb.push(idx(cx,cy-1)); if(!cells[cu].s)nb.push(idx(cx,cy+1));
+  if(!cells[cu].w)nb.push(idx(cx-1,cy)); if(!cells[cu].e)nb.push(idx(cx+1,cy));
+  for(const n of nb)if(n>=0&&n<N*N&&!seen.has(n)){seen.add(n);prev.set(n,cu);q.push(n);}}
+ const p=[];let cu=N*N-1;while(cu!==undefined&&prev.has(cu)){p.push(cu);cu=prev.get(cu);}return p;}
+Arcade.loop(()=>{
+ const S=560/N;
+ x.fillStyle='#0b0d14';x.fillRect(0,0,560,560);
+ x.fillStyle='#123a2a';x.fillRect((N-1)*S+2,(N-1)*S+2,S-4,S-4);
+ if(solve){const p=findPath();x.fillStyle='#7aa2ff33';for(const i of p)x.fillRect((i%N)*S+S/4,(i/N|0)*S+S/4,S/2,S/2);}
+ x.strokeStyle='#5c6fa8';x.lineWidth=Math.max(2,S/12);
+ for(let b=0;b<N;b++)for(let a=0;a<N;a++){const cl=cells[idx(a,b)];
+  x.beginPath();
+  if(cl.n){x.moveTo(a*S,b*S);x.lineTo(a*S+S,b*S);}
+  if(cl.s){x.moveTo(a*S,b*S+S);x.lineTo(a*S+S,b*S+S);}
+  if(cl.w){x.moveTo(a*S,b*S);x.lineTo(a*S,b*S+S);}
+  if(cl.e){x.moveTo(a*S+S,b*S);x.lineTo(a*S+S,b*S+S);}
+  x.stroke();}
+ x.fillStyle='#ffd166';x.beginPath();x.arc(px*S+S/2,py*S+S/2,S/3.2,0,7);x.fill();
+ document.getElementById('t').textContent=Math.floor((Date.now()-t0)/1000);
+ document.getElementById('m').textContent=moves;});
+gen();</script></body></html>

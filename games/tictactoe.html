@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>❌ Tres en raya</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>❌ Tres en raya</h1></header><main>
+<style>#g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(84vw,330px)}
+.c{aspect-ratio:1;background:#182033;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:clamp(34px,12vw,64px);cursor:pointer}
+.c:hover{border-color:var(--acc)}.win{background:#123a2a}</style>
+<div class="hud"><span>Tú <b id="a">0</b></span><span>CPU <b id="b">0</b></span><span>Empates <b id="d">0</b></span><span id="st"></span></div>
+<div id="g"></div>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button><button class="btn" onclick="hard=!hard;st.textContent=hard?'Modo imbatible':'Modo fácil'">Dificultad</button></div>
+<p class="help">Juegas con X. En modo imbatible la CPU usa minimax perfecto.</p></main>
+<script src="../assets/arcade.js"></script><script>
+let b,over,hard=true,sa=0,sb=0,sd=0;
+const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function init(){b=Array(9).fill('');over=0;draw();}
+function winner(s){for(const l of L)if(s[l[0]]&&s[l[0]]===s[l[1]]&&s[l[1]]===s[l[2]])return {p:s[l[0]],l};
+ return s.every(v=>v)?{p:'-'}:null;}
+function mm(s,p){const w=winner(s);
+ if(w)return w.p==='O'?{v:10}:w.p==='X'?{v:-10}:{v:0};
+ const moves=[];
+ s.forEach((v,i)=>{if(!v){const n=s.slice();n[i]=p;moves.push({i,v:mm(n,p==='O'?'X':'O').v});}});
+ return p==='O'?moves.reduce((a,c)=>c.v>a.v?c:a):moves.reduce((a,c)=>c.v<a.v?c:a);}
+function play(i){ if(over||b[i])return; b[i]='X';Arcade.beep(700,.06);
+ if(!end()){ const free=b.map((v,j)=>v?null:j).filter(v=>v!==null);
+  const m=hard?mm(b,'O').i:free[Math.random()*free.length|0];
+  b[m]='O';Arcade.beep(400,.06);end(); }
+ draw();}
+function end(){const w=winner(b);
+ if(w){over=1;
+  if(w.p==='X'){sa++;st.textContent='¡Ganas! 🎉';Arcade.beep(1100,.25);}
+  else if(w.p==='O'){sb++;st.textContent='Gana la CPU';Arcade.beep(140,.25);}
+  else{sd++;st.textContent='Empate';}
+  document.getElementById('a').textContent=sa;document.getElementById('b').textContent=sb;document.getElementById('d').textContent=sd;
+  over=w; draw(); return 1;}
+ return 0;}
+function draw(){const g=document.getElementById('g');g.innerHTML='';
+ b.forEach((v,i)=>{const d=document.createElement('div');d.className='c'+(over&&over.l&&over.l.includes(i)?' win':'');
+  d.textContent=v==='X'?'❌':v==='O'?'⭕':'';d.onclick=()=>play(i);g.appendChild(d);});}
+init();</script></body></html>

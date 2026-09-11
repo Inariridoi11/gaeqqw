@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🐸 Cruza la calle</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🐸 Cruza la calle</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vidas <b id="v">3</b></span><span>Nivel <b id="n">1</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="520" height="520"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Flechas o desliza. Cruza coches y ríos (súbete a los troncos) y llega arriba.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d'),S=40,ROWS=13;
+let f,lanes,score,lives,lvl,dead,homes;
+function init(){score=0;lives=3;lvl=1;dead=0;homes=[0,0,0,0,0];build();reset();}
+function build(){lanes=[];
+ for(let r=1;r<=5;r++)lanes.push({y:r,type:'log',dir:r%2?1:-1,sp:55+lvl*9+r*6,w:r%2?110:80,gap:180-lvl*6});
+ for(let r=7;r<=11;r++)lanes.push({y:r,type:'car',dir:r%2?-1:1,sp:70+lvl*12+r*5,w:56,gap:170-lvl*8});
+ for(const l of lanes){l.items=[];for(let i=0;i<5;i++)l.items.push({x:i*l.gap+Math.random()*40});}}
+function reset(){f={x:260,y:12*S,on:null};}
+addEventListener('keydown',e=>{ if(dead){if(e.key===' ')init();return;}
+ const m={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+ if(!m[e.key])return; e.preventDefault();
+ f.x+=m[e.key][0]*S; f.y+=m[e.key][1]*S;
+ f.x=Math.max(0,Math.min(480,f.x)); f.y=Math.max(0,Math.min(480,f.y));
+ if(m[e.key][1]<0)score+=10;
+ Arcade.beep(500,.04);});
+let tx0,ty0;c.ontouchstart=e=>{tx0=e.touches[0].clientX;ty0=e.touches[0].clientY;};
+c.ontouchend=e=>{const dx=e.changedTouches[0].clientX-tx0,dy=e.changedTouches[0].clientY-ty0;
+ const k=Math.abs(dx)>Math.abs(dy)?(dx>0?'ArrowRight':'ArrowLeft'):(dy>0?'ArrowDown':'ArrowUp');
+ dispatchEvent(new KeyboardEvent('keydown',{key:k}));};
+function die(){lives--;Arcade.beep(120,.3);if(lives<=0)dead=1;else reset();}
+Arcade.loop(dt=>{
+ if(!dead){
+  for(const l of lanes)for(const it of l.items){it.x+=l.dir*l.sp*dt;
+   if(l.dir>0&&it.x>560)it.x=-l.w-Math.random()*60; if(l.dir<0&&it.x<-l.w-60)it.x=540+Math.random()*60;}
+  const row=f.y/S|0;
+  const lane=lanes.find(l=>l.y===row);
+  if(lane){ const hit=lane.items.find(it=>f.x+30>it.x&&f.x<it.x+lane.w);
+   if(lane.type==='car'){ if(hit)die(); }
+   else { if(hit)f.x+=lane.dir*lane.sp*dt; else die();
+    if(f.x<-20||f.x>500)die(); } }
+  if(row===0){ const slot=Math.round(f.x/104); 
+   if(!homes[Math.min(4,slot)]){homes[Math.min(4,slot)]=1;score+=100;Arcade.beep(1100,.2);reset();
+    if(homes.every(h=>h)){lvl++;score+=500;homes=[0,0,0,0,0];build();reset();}}
+   else {reset();} }
+ }
+ x.fillStyle='#0b0d14';x.fillRect(0,0,520,520);
+ x.fillStyle='#1b3a6b';x.fillRect(0,S,520,5*S);
+ x.fillStyle='#152033';x.fillRect(0,6*S,520,S);
+ x.fillStyle='#20242e';x.fillRect(0,7*S,520,5*S);
+ x.fillStyle='#152033';x.fillRect(0,12*S,520,S);
+ x.fillStyle='#0d2e1f';x.fillRect(0,0,520,S);
+ for(let i=0;i<5;i++){x.fillStyle=homes[i]?'#5ee0a0':'#123a2a';x.fillRect(i*104+12,4,80,S-8);
+  if(homes[i]){x.font='24px serif';x.fillText('🐸',i*104+38,30);}}
+ for(const l of lanes)for(const it of l.items){
+  if(l.type==='car'){x.fillStyle=['#ff6b6b','#e8d24a','#7aa2ff','#b06bd6'][l.y%4];
+   x.fillRect(it.x,l.y*S+6,l.w,S-12);x.fillStyle='#0b0d14';x.fillRect(it.x+8,l.y*S+12,l.w-16,8);}
+  else{x.fillStyle='#7a5230';x.fillRect(it.x,l.y*S+8,l.w,S-16);
+   x.fillStyle='#6b4526';x.fillRect(it.x,l.y*S+8,l.w,5);}}
+ x.font='30px serif';x.fillText('🐸',f.x+4,f.y+32);
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,520,520);x.fillStyle='#ff6b6b';x.font='bold 28px monospace';x.textAlign='center';
+  x.fillText('GAME OVER',260,250);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO = reiniciar',260,280);x.textAlign='left';}
+ s.textContent=score;v.textContent=lives;n.textContent=lvl;b.textContent=Arcade.best('frogger',score);});
+init();</script></body></html>

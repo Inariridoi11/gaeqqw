@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔢 Sudoku</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🔢 Sudoku</h1></header><main>
+<style>#g{display:grid;grid-template-columns:repeat(9,1fr);width:min(94vw,486px);aspect-ratio:1;background:#26304a;gap:1px;border:3px solid #26304a;border-radius:6px}
+.c{background:#141a28;display:flex;align-items:center;justify-content:center;font-size:clamp(14px,4.5vw,24px);cursor:pointer}
+.fix{color:#94a0bd;background:#182033}.sel{background:#243156!important;outline:2px solid var(--acc)}
+.err{color:#ff6b6b}.hl{background:#1c2540}
+.c:nth-child(3n){border-right:2px solid #26304a}
+#np{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+#np button{width:44px;height:44px;font-size:18px}</style>
+<div class="hud"><span>Dificultad <b id="d">Fácil</b></span><span>Errores <b id="e">0</b></span><span>Tiempo <b id="t">0</b>s</span><span id="st"></span></div>
+<div id="g"></div><div id="np"></div>
+<div class="row" style="margin-top:10px"><button class="btn" onclick="gen(40)">Fácil</button><button class="btn" onclick="gen(48)">Medio</button><button class="btn" onclick="gen(55)">Difícil</button><button class="btn" onclick="hint()">Pista</button></div>
+<p class="help">Haz clic en una casilla y escribe un número (1-9). Borra con 0 o Supr.</p></main>
+<script src="../assets/arcade.js"></script><script>
+let sol,puz,cur,sel=-1,errs=0,t0,timer;
+function ok(b,i,v){const r=i/9|0,c=i%9;
+ for(let k=0;k<9;k++){if(b[r*9+k]===v||b[k*9+c]===v)return false;}
+ const br=3*(r/3|0),bc=3*(c/3|0);
+ for(let a=0;a<3;a++)for(let d=0;d<3;d++)if(b[(br+a)*9+bc+d]===v)return false;
+ return true;}
+function solve(b,count){ const i=b.indexOf(0); if(i<0)return 1;
+ let n=0;
+ for(let v=1;v<=9;v++)if(ok(b,i,v)){b[i]=v;n+=solve(b,count);b[i]=0;if(n>1)break;}
+ return n;}
+function fill(b){ const i=b.indexOf(0); if(i<0)return true;
+ const vs=[1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-.5);
+ for(const v of vs)if(ok(b,i,v)){b[i]=v;if(fill(b))return true;b[i]=0;}
+ return false;}
+function gen(holes){ sol=Array(81).fill(0);fill(sol);puz=sol.slice();
+ const idx=[...Array(81).keys()].sort(()=>Math.random()-.5);let removed=0;
+ for(const i of idx){ if(removed>=holes)break; const bk=puz[i];puz[i]=0;
+  const t=puz.slice(); if(solve(t,1)!==1){puz[i]=bk;} else removed++; }
+ cur=puz.slice();errs=0;sel=-1;
+ document.getElementById('d').textContent=holes<45?'Fácil':holes<52?'Medio':'Difícil';
+ document.getElementById('e').textContent=0;document.getElementById('st').textContent='';
+ clearInterval(timer);t0=Date.now();timer=setInterval(()=>document.getElementById('t').textContent=Math.floor((Date.now()-t0)/1000),500);
+ draw();}
+function set(v){ if(sel<0||puz[sel])return;
+ if(v&&v!==sol[sel]){errs++;document.getElementById('e').textContent=errs;Arcade.beep(150,.2);}
+ else if(v)Arcade.beep(800,.05);
+ cur[sel]=v;draw();
+ if(cur.every((n,i)=>n===sol[i])){clearInterval(timer);document.getElementById('st').textContent='🏆 ¡Resuelto!';Arcade.beep(1200,.4);}}
+function hint(){ const empty=cur.map((v,i)=>v?null:i).filter(v=>v!==null); if(!empty.length)return;
+ const i=empty[Math.random()*empty.length|0];cur[i]=sol[i];puz[i]=sol[i];draw();Arcade.beep(1000,.1);}
+addEventListener('keydown',e=>{ if(/^[1-9]$/.test(e.key))set(+e.key);
+ if(e.key==='0'||e.key==='Backspace'||e.key==='Delete')set(0);
+ const m={ArrowLeft:-1,ArrowRight:1,ArrowUp:-9,ArrowDown:9};
+ if(m[e.key]&&sel>=0){sel=(sel+m[e.key]+81)%81;draw();e.preventDefault();}});
+function draw(){const g=document.getElementById('g');g.innerHTML='';
+ cur.forEach((v,i)=>{const d=document.createElement('div');
+  const r=i/9|0,c=i%9;
+  d.className='c'+(puz[i]?' fix':'')+(i===sel?' sel':'')
+   +(sel>=0&&!puz[i]&&(r===(sel/9|0)||c===sel%9)?' hl':'')
+   +(v&&v!==sol[i]?' err':'');
+  d.style.borderRight=(c%3===2&&c<8)?'2px solid #26304a':'';
+  d.style.borderBottom=(r%3===2&&r<8)?'2px solid #26304a':'';
+  d.textContent=v||'';d.onclick=()=>{sel=i;draw();};g.appendChild(d);});
+ const np=document.getElementById('np');if(!np.children.length){
+  for(let i=1;i<=9;i++){const b=document.createElement('button');b.className='btn';b.textContent=i;b.onclick=()=>set(i);np.appendChild(b);}
+  const b=document.createElement('button');b.className='btn';b.textContent='⌫';b.onclick=()=>set(0);np.appendChild(b);}}
+gen(40);</script></body></html>

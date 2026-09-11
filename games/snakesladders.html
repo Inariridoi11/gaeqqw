@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎲 Serpientes y escaleras</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🎲 Serpientes y escaleras</h1></header><main>
+<div class="hud"><span>Tú <b id="p1">1</b></span><span>CPU <b id="p2">1</b></span><span>Dado <b id="dd">—</b></span><span id="st">Tu turno</span></div>
+<canvas id="c" width="500" height="500"></canvas>
+<div class="row"><button class="btn" id="roll" onclick="roll()">🎲 Tirar</button><button class="btn" onclick="init()">Nueva partida</button></div>
+<p class="help">Sube por las escaleras 🪜, evita las serpientes 🐍. Gana quien llegue antes a 100.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+const JUMP={4:14,9:31,17:7,20:38,28:84,40:59,51:67,54:34,62:19,64:60,63:81,71:91,87:24,93:73,95:75,99:78};
+let pos,over,turn;
+function init(){pos=[1,1];over=0;turn=0;document.getElementById('st').textContent='Tu turno';draw();}
+function cell(n){const r=Math.floor((n-1)/10),i=(n-1)%10;
+ const col=r%2?9-i:i; return {x:col*50+25,y:475-r*50};}
+function roll(){ if(over||turn!==0)return; go(0); }
+function go(p){
+ const d=1+Math.random()*6|0;
+ document.getElementById('dd').textContent=d;Arcade.beep(500,.08);
+ let n=pos[p]+d; if(n>100)n=pos[p];
+ let steps=0;
+ const iv=setInterval(()=>{
+  if(pos[p]<n){pos[p]++;Arcade.beep(700,.02);draw();}
+  else{clearInterval(iv);
+   if(JUMP[pos[p]]){const t=JUMP[pos[p]];
+    document.getElementById('st').textContent=t>pos[p]?'🪜 ¡Escalera!':'🐍 ¡Serpiente!';
+    Arcade.beep(t>pos[p]?1100:180,.25);pos[p]=t;draw();}
+   if(pos[p]>=100){over=1;document.getElementById('st').textContent=p===0?'🏆 ¡Ganaste!':'Gana la CPU';draw();return;}
+   turn=1-turn;
+   document.getElementById('st').textContent=turn===0?'Tu turno':'Turno CPU';
+   if(turn===1&&!over)setTimeout(()=>go(1),700);}
+ },90);}
+function draw(){
+ for(let n=1;n<=100;n++){const p=cell(n);
+  const r=Math.floor((n-1)/10);
+  x.fillStyle=(n%2)?'#182033':'#141a28';
+  x.fillRect(p.x-25,p.y-25,50,50);
+  x.fillStyle='#56618a';x.font='11px monospace';x.textAlign='left';x.fillText(n,p.x-22,p.y+20);}
+ for(const [from,to] of Object.entries(JUMP)){
+  const a=cell(+from),b=cell(to);
+  x.strokeStyle=to>+from?'#5ee0a0':'#ff6b6b';x.lineWidth=4;
+  x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();
+  x.font='16px serif';x.fillText(to>+from?'🪜':'🐍',a.x-8,a.y+6);}
+ const A=cell(pos[0]),B=cell(pos[1]);
+ x.fillStyle='#7aa2ff';x.beginPath();x.arc(A.x-9,A.y,11,0,7);x.fill();
+ x.fillStyle='#ffd166';x.beginPath();x.arc(B.x+9,B.y,11,0,7);x.fill();
+ document.getElementById('p1').textContent=pos[0];document.getElementById('p2').textContent=pos[1];}
+init();</script></body></html>

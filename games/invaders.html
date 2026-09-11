@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>👾 Space Invaders</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>👾 Space Invaders</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vidas <b id="v">3</b></span><span>Oleada <b id="w">1</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="640" height="520"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">← → mover, ESPACIO disparar. Destruye la flota antes de que aterrice.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let ship,inv,bul,ebul,score,lives,wave,dead,k={},dir,drop,cool,shields;
+function init(){ship={x:300,w:44};score=0;lives=3;wave=1;dead=0;spawn();}
+function spawn(){inv=[];for(let r=0;r<5;r++)for(let i=0;i<11;i++)
+ inv.push({x:60+i*46,y:60+r*38,w:30,h:22,alive:1,t:r<1?30:r<3?20:10,c:r<1?'#ff6b6b':r<3?'#b06bd6':'#5ee0a0'});
+ bul=[];ebul=[];dir=1;drop=0;cool=0;
+ shields=[];for(let i=0;i<4;i++)for(let a=0;a<5;a++)for(let b=0;b<3;b++)
+  shields.push({x:80+i*150+a*16,y:410+b*14,hp:3});}
+addEventListener('keydown',e=>{k[e.key]=1;if(e.code==='Space'){e.preventDefault();if(dead)init();}});
+addEventListener('keyup',e=>k[e.key]=0);
+c.ontouchstart=e=>{const r=c.getBoundingClientRect();ship.x=(e.touches[0].clientX-r.left)*(640/r.width);k[' ']=1;e.preventDefault();};
+c.ontouchmove=e=>{const r=c.getBoundingClientRect();ship.x=(e.touches[0].clientX-r.left)*(640/r.width);e.preventDefault();};
+c.ontouchend=()=>k[' ']=0;
+Arcade.loop(dt=>{
+ if(!dead){
+  if(k.ArrowLeft)ship.x-=340*dt; if(k.ArrowRight)ship.x+=340*dt;
+  ship.x=Math.max(24,Math.min(616,ship.x));
+  cool-=dt;
+  if((k[' ']||k.Space)&&cool<=0){bul.push({x:ship.x,y:470});cool=.35;Arcade.beep(800,.05);}
+  const alive=inv.filter(i=>i.alive);
+  const sp=(28+ (55-alive.length)*1.6 + wave*8);
+  let edge=0;
+  for(const i of alive){i.x+=dir*sp*dt; if(i.x<20||i.x>620)edge=1;}
+  if(edge){dir*=-1;for(const i of alive)i.y+=22;}
+  if(Math.random()<dt*(1.1+wave*.25)&&alive.length){const sh=alive[Math.random()*alive.length|0];ebul.push({x:sh.x,y:sh.y+20});}
+  for(const b of bul)b.y-=460*dt;
+  for(const b of ebul)b.y+=250*dt;
+  bul=bul.filter(b=>b.y>-10);ebul=ebul.filter(b=>b.y<530);
+  for(const b of bul)for(const i of alive)
+   if(i.alive&&Math.abs(b.x-i.x)<18&&Math.abs(b.y-i.y)<14){i.alive=0;b.y=-99;score+=i.t;Arcade.beep(300,.06);}
+  for(const b of [...bul,...ebul])for(const s of shields)
+   if(s.hp>0&&Math.abs(b.x-s.x)<8&&Math.abs(b.y-s.y)<7){s.hp--;b.y=b.y<250?-99:999;}
+  for(const b of ebul)if(Math.abs(b.x-ship.x)<22&&b.y>470&&b.y<500){b.y=999;lives--;Arcade.beep(120,.3);if(lives<=0)dead=1;}
+  if(alive.some(i=>i.y>452)){dead=1;}
+  if(!alive.length){wave++;score+=200;spawn();}
+ }
+ x.fillStyle='#05060a';x.fillRect(0,0,640,520);
+ for(let i=0;i<40;i++){x.fillStyle='rgba(255,255,255,.18)';x.fillRect((i*97)%640,(i*57+performance.now()/60)%520,2,2);}
+ for(const i of inv)if(i.alive){x.fillStyle=i.c;
+  const f=(performance.now()/400|0)%2;
+  x.fillRect(i.x-14,i.y-8,28,14);x.fillRect(i.x-8,i.y-14,16,6);
+  x.fillRect(i.x-18,i.y+(f?4:-2),5,8);x.fillRect(i.x+13,i.y+(f?-2:4),5,8);
+  x.fillStyle='#05060a';x.fillRect(i.x-7,i.y-4,4,4);x.fillRect(i.x+3,i.y-4,4,4);}
+ for(const s of shields)if(s.hp>0){x.fillStyle=['','#5a3','#7c4','#3fbf85'][s.hp];x.fillRect(s.x-8,s.y-6,15,12);}
+ x.fillStyle='#5ee0a0';x.fillRect(ship.x-22,486,44,10);x.fillRect(ship.x-5,476,10,10);
+ x.fillStyle='#ffe23d';for(const b of bul)x.fillRect(b.x-2,b.y,4,12);
+ x.fillStyle='#ff6b6b';for(const b of ebul)x.fillRect(b.x-2,b.y,4,10);
+ if(dead){x.fillStyle='rgba(0,0,0,.78)';x.fillRect(0,0,640,520);x.fillStyle='#ff6b6b';x.font='bold 30px monospace';x.textAlign='center';
+  x.fillText('GAME OVER',320,250);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO = reiniciar',320,282);x.textAlign='left';}
+ s.textContent=score;v.textContent=lives;w.textContent=wave;b.textContent=Arcade.best('invaders',score);});
+init();</script></body></html>

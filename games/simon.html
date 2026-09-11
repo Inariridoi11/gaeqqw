@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎵 Simón dice</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🎵 Simón dice</h1></header><main>
+<style>#p{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:min(86vw,360px)}
+.pad{aspect-ratio:1;border-radius:16px;opacity:.45;cursor:pointer;transition:.1s}
+.pad.on{opacity:1;transform:scale(.96)}</style>
+<div class="hud"><span>Ronda <b id="r">0</b></span><span>Récord <b id="b">0</b></span><span id="st">Pulsa Empezar</span></div>
+<div id="p"></div>
+<div class="row"><button class="btn" onclick="start()">Empezar</button></div>
+<p class="help">Repite la secuencia de colores. Cada ronda añade un color más.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const COL=['#ff6b6b','#5ee0a0','#7aa2ff','#e8d24a'],FR=[330,392,494,587];
+let seq=[],idx=0,playing=0,round=0;
+const P=document.getElementById('p');
+COL.forEach((c,i)=>{const d=document.createElement('div');d.className='pad';d.style.background=c;
+ d.onclick=()=>hit(i);P.appendChild(d);});
+function flash(i,ms=380){const d=P.children[i];d.classList.add('on');Arcade.beep(FR[i],ms/1000,'sine',.08);
+ setTimeout(()=>d.classList.remove('on'),ms-60);}
+async function show(){playing=1;st.textContent='Mira…';
+ await new Promise(r=>setTimeout(r,500));
+ for(const i of seq){flash(i,Math.max(180,420-round*12));await new Promise(r=>setTimeout(r,Math.max(230,480-round*12)));}
+ playing=0;idx=0;st.textContent='¡Tu turno!';}
+function start(){seq=[];round=0;next();}
+function next(){round++;r.textContent=round;seq.push(Math.random()*4|0);show();}
+function hit(i){ if(playing||!seq.length)return; flash(i,200);
+ if(seq[idx]!==i){st.textContent='❌ ¡Fallaste! Récord: '+Arcade.best('simon',round-1);Arcade.beep(90,.5);seq=[];r.textContent=0;
+  document.getElementById('b').textContent=Arcade.best('simon',0);return;}
+ idx++;
+ if(idx>=seq.length){Arcade.best('simon',round);document.getElementById('b').textContent=Arcade.best('simon',round);setTimeout(next,700);}}
+document.getElementById('b').textContent=Arcade.best('simon',0);
+</script></body></html>

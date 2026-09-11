@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🏎️ Carrera</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🏎️ Carrera</h1></header><main>
+<div class="hud"><span>Vuelta <b id="l">1</b></span><span>Velocidad <b id="v">0</b></span><span>Distancia <b id="s">0</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="480" height="600"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">← → esquivar, ↑ acelerar, ↓ frenar. ¡No choques!</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let car,cars,dist,sp,dead,k={},road,rt;
+function init(){car={x:240,y:500};cars=[];dist=0;sp=200;dead=0;road=240;rt=0;}
+addEventListener('keydown',e=>{k[e.key]=1;if(e.key===' '&&dead)init();});
+addEventListener('keyup',e=>k[e.key]=0);
+c.ontouchmove=e=>{const r=c.getBoundingClientRect();car.x=(e.touches[0].clientX-r.left)*(480/r.width);e.preventDefault();};
+Arcade.loop(dt=>{
+ if(!dead){
+  if(k.ArrowLeft)car.x-=280*dt; if(k.ArrowRight)car.x+=280*dt;
+  sp+=((k.ArrowUp?460:k.ArrowDown?150:300)-sp)*dt*1.4;
+  dist+=sp*dt/10; rt+=dt;
+  road=240+Math.sin(rt*.6)*90+Math.sin(rt*.23)*40;
+  const half=120;
+  car.x=Math.max(20,Math.min(460,car.x));
+  if(car.x<road-half+14||car.x>road+half-14){sp*=.965;
+   if(Math.random()<.3)Arcade.beep(120,.04,'sawtooth',.02);}
+  if(Math.random()<dt*(1.4+sp/400))cars.push({x:road+(Math.random()*200-100),y:-60,sp:sp*(.35+Math.random()*.3)});
+  for(const o of cars)o.y+=(sp-o.sp)*dt;
+  cars=cars.filter(o=>o.y<680);
+  for(const o of cars)if(Math.abs(o.x-car.x)<34&&Math.abs(o.y-car.y)<56){dead=1;Arcade.beep(100,.5);}
+ }
+ x.fillStyle='#0f2a16';x.fillRect(0,0,480,600);
+ for(let y=0;y<600;y+=6){
+  const t=rt-(600-y)/300, r=240+Math.sin(t*.6)*90+Math.sin(t*.23)*40;
+  x.fillStyle='#20242e';x.fillRect(r-120,y,240,6);
+  x.fillStyle='#cfd6e6';x.fillRect(r-122,y,4,6);x.fillRect(r+118,y,4,6);
+  if(((y+dist*6)%60)<30){x.fillStyle='#e8d24a';x.fillRect(r-3,y,6,6);}}
+ for(const o of cars){x.fillStyle='#ff6b6b';x.fillRect(o.x-18,o.y-28,36,56);
+  x.fillStyle='#0b0d14';x.fillRect(o.x-14,o.y-18,28,16);x.fillRect(o.x-14,o.y+6,28,12);}
+ x.fillStyle='#5ee0a0';x.fillRect(car.x-18,car.y-28,36,56);
+ x.fillStyle='#0b0d14';x.fillRect(car.x-14,car.y-18,28,16);x.fillRect(car.x-14,car.y+6,28,12);
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,480,600);x.fillStyle='#ff6b6b';x.font='bold 26px monospace';x.textAlign='center';
+  x.fillText('¡ACCIDENTE!',240,290);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO para reiniciar',240,320);x.textAlign='left';}
+ document.getElementById('l').textContent=1+Math.floor(dist/1000);
+ document.getElementById('v').textContent=Math.round(sp);
+ s.textContent=Math.floor(dist);b.textContent=Arcade.best('racing',Math.floor(dist));});
+init();</script></body></html>

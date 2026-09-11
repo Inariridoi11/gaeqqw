@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🧱 Tetris</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🧱 Tetris</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Líneas <b id="l">0</b></span><span>Nivel <b id="n">1</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="300" height="600"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button><button class="btn" onclick="paused=!paused">Pausa</button></div>
+<p class="help">← → mover, ↑ rotar, ↓ bajar, ESPACIO caída instantánea, C guardar pieza.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d'),CW=10,CH=20,S=30;
+const P={I:[[[0,1],[1,1],[2,1],[3,1]],'#4fd6e0'],O:[[[1,0],[2,0],[1,1],[2,1]],'#e8d24a'],
+ T:[[[1,0],[0,1],[1,1],[2,1]],'#b06bd6'],S:[[[1,0],[2,0],[0,1],[1,1]],'#5ee0a0'],
+ Z:[[[0,0],[1,0],[1,1],[2,1]],'#ff6b6b'],J:[[[0,0],[0,1],[1,1],[2,1]],'#7aa2ff'],L:[[[2,0],[0,1],[1,1],[2,1]],'#e89a4a']};
+let grid,cur,nx,hold,canHold,score,lines,lvl,acc,dead,paused=false;
+function bag(){const k=Object.keys(P);return k[Math.random()*k.length|0];}
+function mk(t){return {t,cells:P[t][0].map(a=>a.slice()),x:3,y:0};}
+function init(){grid=Array.from({length:CH},()=>Array(CW).fill(0));cur=mk(bag());nx=bag();hold=null;canHold=1;score=0;lines=0;lvl=1;acc=0;dead=0;}
+function cellsOf(p){return p.cells.map(([a,b])=>[a+p.x,b+p.y]);}
+function ok(p){return cellsOf(p).every(([a,b])=>a>=0&&a<CW&&b<CH&&(b<0||!grid[b][a]));}
+function rot(p){const cx=1.5,cy=1.5;return {...p,cells:p.cells.map(([a,b])=>[Math.round(cx+(cy-b)),Math.round(cy+(a-cx))])};}
+function lock(){cellsOf(cur).forEach(([a,b])=>{if(b>=0)grid[b][a]=P[cur.t][1];});
+ let cl=0;for(let y=CH-1;y>=0;y--){if(grid[y].every(v=>v)){grid.splice(y,1);grid.unshift(Array(CW).fill(0));cl++;y++;}}
+ if(cl){lines+=cl;score+=[0,100,300,500,800][cl]*lvl;lvl=1+(lines/10|0);Arcade.beep(600+cl*120,.12);}
+ cur=mk(nx);nx=bag();canHold=1;if(!ok(cur))dead=1;}
+addEventListener('keydown',e=>{ if(dead){if(e.key===' ')init();return;} if(paused)return;
+ const t={...cur};
+ if(e.key==='ArrowLeft'){t.x--;if(ok(t))cur=t;}
+ else if(e.key==='ArrowRight'){t.x++;if(ok(t))cur=t;}
+ else if(e.key==='ArrowDown'){t.y++;if(ok(t)){cur=t;score++;}}
+ else if(e.key==='ArrowUp'){const r=rot(cur);for(const k of[0,-1,1,-2,2]){const q={...r,x:r.x+k};if(ok(q)){cur=q;break;}}}
+ else if(e.key===' '){while(ok({...cur,y:cur.y+1})){cur.y++;score+=2;}lock();}
+ else if(e.key==='c'||e.key==='C'){if(canHold){const h=hold;hold=cur.t;cur=h?mk(h):mk(nx);if(!h)nx=bag();canHold=0;}}
+ else return; e.preventDefault();});
+Arcade.loop(dt=>{ if(!dead&&!paused){acc+=dt;const sp=Math.max(.06,.8-lvl*.06);
+  if(acc>sp){acc=0;const t={...cur,y:cur.y+1};if(ok(t))cur=t;else lock();}}
+ x.fillStyle='#0b0d14';x.fillRect(0,0,c.width,c.height);
+ x.strokeStyle='#161b29';for(let i=0;i<=CW;i++){x.beginPath();x.moveTo(i*S,0);x.lineTo(i*S,600);x.stroke();}
+ for(let i=0;i<=CH;i++){x.beginPath();x.moveTo(0,i*S);x.lineTo(300,i*S);x.stroke();}
+ for(let y=0;y<CH;y++)for(let a=0;a<CW;a++)if(grid[y][a]){x.fillStyle=grid[y][a];x.fillRect(a*S+1,y*S+1,S-2,S-2);}
+ // fantasma
+ let g={...cur};while(ok({...g,y:g.y+1}))g.y++;
+ x.globalAlpha=.25;x.fillStyle=P[cur.t][1];cellsOf(g).forEach(([a,b])=>b>=0&&x.fillRect(a*S+1,b*S+1,S-2,S-2));x.globalAlpha=1;
+ x.fillStyle=P[cur.t][1];cellsOf(cur).forEach(([a,b])=>b>=0&&x.fillRect(a*S+1,b*S+1,S-2,S-2));
+ x.fillStyle='#94a0bd';x.font='12px monospace';x.fillText('SIG: '+nx+(hold?'  HOLD: '+hold:''),8,16);
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,300,600);x.fillStyle='#ff6b6b';x.font='bold 24px monospace';x.textAlign='center';
+  x.fillText('GAME OVER',150,300);x.font='12px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO = reiniciar',150,328);x.textAlign='left';}
+ s.textContent=score;l.textContent=lines;n.textContent=lvl;b.textContent=Arcade.best('tetris',score);});
+init();</script></body></html>

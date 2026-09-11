@@ -1,0 +1,678 @@
+{
+  "name": "Arcade HTML",
+  "count": 56,
+  "games": [
+    {
+      "id": "chess",
+      "title": "Ajedrez",
+      "emoji": "♛",
+      "category": "tablero",
+      "description": "Ajedrez completo con enroque, al paso, coronación e IA minimax de 3 niveles.",
+      "tags": [
+        "IA",
+        "clásico"
+      ],
+      "file": "games/chess.html"
+    },
+    {
+      "id": "granny",
+      "title": "Granny — Escape",
+      "emoji": "👵",
+      "category": "terror",
+      "description": "Escapa de la casa en 3D: busca 3 llaves, evita a Granny y sobrevive 5 días.",
+      "tags": [
+        "3D",
+        "terror"
+      ],
+      "file": "games/granny.html"
+    },
+    {
+      "id": "fnaf",
+      "title": "Five Nights — Guardia",
+      "emoji": "🐻",
+      "category": "terror",
+      "description": "Sobrevive de las 12 AM a las 6 AM vigilando cámaras, puertas y energía. 5 noches.",
+      "tags": [
+        "terror",
+        "estrategia"
+      ],
+      "file": "games/fnaf.html"
+    },
+    {
+      "id": "slender",
+      "title": "Las 8 páginas",
+      "emoji": "🌲",
+      "category": "terror",
+      "description": "Bosque nocturno, linterna con batería y un acechador que solo se mueve si no miras.",
+      "tags": [
+        "3D",
+        "terror"
+      ],
+      "file": "games/slender.html"
+    },
+    {
+      "id": "pacman",
+      "title": "Pac-Man",
+      "emoji": "👻",
+      "category": "arcade",
+      "description": "Laberinto completo con 4 fantasmas, píldoras de poder y niveles.",
+      "tags": [
+        "arcade",
+        "clásico"
+      ],
+      "file": "games/pacman.html"
+    },
+    {
+      "id": "tetris",
+      "title": "Tetris",
+      "emoji": "🧱",
+      "category": "puzzle",
+      "description": "7 piezas, rotación con patadas de pared, fantasma, hold y niveles.",
+      "tags": [
+        "clásico",
+        "puzzle"
+      ],
+      "file": "games/tetris.html"
+    },
+    {
+      "id": "snake",
+      "title": "Snake",
+      "emoji": "🐍",
+      "category": "arcade",
+      "description": "La serpiente clásica con velocidad creciente y récord guardado.",
+      "tags": [
+        "clásico",
+        "arcade"
+      ],
+      "file": "games/snake.html"
+    },
+    {
+      "id": "invaders",
+      "title": "Space Invaders",
+      "emoji": "👾",
+      "category": "arcade",
+      "description": "Flota alienígena, escudos destructibles y oleadas infinitas.",
+      "tags": [
+        "clásico",
+        "disparos"
+      ],
+      "file": "games/invaders.html"
+    },
+    {
+      "id": "asteroids",
+      "title": "Asteroids",
+      "emoji": "🪨",
+      "category": "arcade",
+      "description": "Nave con inercia, asteroides que se fragmentan e hiperespacio.",
+      "tags": [
+        "clásico",
+        "disparos"
+      ],
+      "file": "games/asteroids.html"
+    },
+    {
+      "id": "breakout",
+      "title": "Breakout",
+      "emoji": "🧱",
+      "category": "arcade",
+      "description": "Rompe ladrillos con rebote según el punto de impacto en la pala.",
+      "tags": [
+        "clásico",
+        "arcade"
+      ],
+      "file": "games/breakout.html"
+    },
+    {
+      "id": "pong",
+      "title": "Pong",
+      "emoji": "🏓",
+      "category": "arcade",
+      "description": "El duelo original contra la CPU con 3 niveles de dificultad.",
+      "tags": [
+        "clásico",
+        "2 jugadores"
+      ],
+      "file": "games/pong.html"
+    },
+    {
+      "id": "frogger",
+      "title": "Cruza la calle",
+      "emoji": "🐸",
+      "category": "arcade",
+      "description": "Coches, río con troncos y 5 casillas que rellenar.",
+      "tags": [
+        "clásico",
+        "arcade"
+      ],
+      "file": "games/frogger.html"
+    },
+    {
+      "id": "missile",
+      "title": "Missile Command",
+      "emoji": "🚀",
+      "category": "arcade",
+      "description": "Intercepta misiles y protege seis ciudades del bombardeo.",
+      "tags": [
+        "clásico",
+        "disparos"
+      ],
+      "file": "games/missile.html"
+    },
+    {
+      "id": "lander",
+      "title": "Alunizaje",
+      "emoji": "🌙",
+      "category": "arcade",
+      "description": "Física lunar, combustible limitado y plataformas con multiplicador.",
+      "tags": [
+        "clásico",
+        "física"
+      ],
+      "file": "games/lander.html"
+    },
+    {
+      "id": "pinball",
+      "title": "Pinball",
+      "emoji": "🎰",
+      "category": "arcade",
+      "description": "Mesa con parachoques, palas físicas y lanzador con potencia.",
+      "tags": [
+        "física",
+        "arcade"
+      ],
+      "file": "games/pinball.html"
+    },
+    {
+      "id": "flappy",
+      "title": "Flappy",
+      "emoji": "🐦",
+      "category": "arcade",
+      "description": "Un toque para aletear y tubos que se estrechan con la puntuación.",
+      "tags": [
+        "arcade",
+        "reflejos"
+      ],
+      "file": "games/flappy.html"
+    },
+    {
+      "id": "doodlejump",
+      "title": "Salta que salta",
+      "emoji": "🦘",
+      "category": "arcade",
+      "description": "Sube saltando por plataformas móviles y rompibles.",
+      "tags": [
+        "arcade",
+        "plataformas"
+      ],
+      "file": "games/doodlejump.html"
+    },
+    {
+      "id": "runner",
+      "title": "Runner infinito",
+      "emoji": "🏃",
+      "category": "arcade",
+      "description": "Doble salto, deslizamiento, monedas y velocidad creciente.",
+      "tags": [
+        "arcade",
+        "reflejos"
+      ],
+      "file": "games/runner.html"
+    },
+    {
+      "id": "platformer",
+      "title": "Plataformas",
+      "emoji": "🍄",
+      "category": "plataformas",
+      "description": "Nivel de scroll lateral con monedas, enemigos pisables y bandera final.",
+      "tags": [
+        "plataformas",
+        "aventura"
+      ],
+      "file": "games/platformer.html"
+    },
+    {
+      "id": "helicopter",
+      "title": "Helicóptero",
+      "emoji": "🚁",
+      "category": "arcade",
+      "description": "Túnel de cueva generado al vuelo, un solo botón.",
+      "tags": [
+        "arcade",
+        "reflejos"
+      ],
+      "file": "games/helicopter.html"
+    },
+    {
+      "id": "racing",
+      "title": "Carrera",
+      "emoji": "🏎️",
+      "category": "arcade",
+      "description": "Carretera con curvas, tráfico y velocímetro.",
+      "tags": [
+        "carreras",
+        "arcade"
+      ],
+      "file": "games/racing.html"
+    },
+    {
+      "id": "shooter",
+      "title": "Shooter espacial",
+      "emoji": "🚀",
+      "category": "arcade",
+      "description": "Naves enemigas, jefes, mejoras de arma y vida.",
+      "tags": [
+        "disparos",
+        "arcade"
+      ],
+      "file": "games/shooter.html"
+    },
+    {
+      "id": "tanks",
+      "title": "Duelo de tanques",
+      "emoji": "💥",
+      "category": "estrategia",
+      "description": "Artillería por turnos con viento y terreno destructible.",
+      "tags": [
+        "por turnos",
+        "física"
+      ],
+      "file": "games/tanks.html"
+    },
+    {
+      "id": "towerdefense",
+      "title": "Tower Defense",
+      "emoji": "🏰",
+      "category": "estrategia",
+      "description": "3 tipos de torre, oleadas crecientes, jefes y economía de oro.",
+      "tags": [
+        "estrategia",
+        "oleadas"
+      ],
+      "file": "games/towerdefense.html"
+    },
+    {
+      "id": "bubble",
+      "title": "Bubble Shooter",
+      "emoji": "🫧",
+      "category": "puzzle",
+      "description": "Dispara burbujas, agrupa 3+ colores y desprende racimos.",
+      "tags": [
+        "puzzle",
+        "arcade"
+      ],
+      "file": "games/bubble.html"
+    },
+    {
+      "id": "2048",
+      "title": "2048",
+      "emoji": "🔢",
+      "category": "puzzle",
+      "description": "Junta potencias de dos hasta llegar a la ficha 2048.",
+      "tags": [
+        "puzzle",
+        "números"
+      ],
+      "file": "games/2048.html"
+    },
+    {
+      "id": "mines",
+      "title": "Buscaminas",
+      "emoji": "💣",
+      "category": "puzzle",
+      "description": "Tres tamaños, banderas, apertura en cascada y primer clic seguro.",
+      "tags": [
+        "puzzle",
+        "clásico"
+      ],
+      "file": "games/mines.html"
+    },
+    {
+      "id": "sudoku",
+      "title": "Sudoku",
+      "emoji": "🔢",
+      "category": "puzzle",
+      "description": "Generador con solución única, 3 dificultades, pistas y validación.",
+      "tags": [
+        "puzzle",
+        "números"
+      ],
+      "file": "games/sudoku.html"
+    },
+    {
+      "id": "sokoban",
+      "title": "Sokoban",
+      "emoji": "📦",
+      "category": "puzzle",
+      "description": "8 niveles verificados por solver, con deshacer ilimitado.",
+      "tags": [
+        "puzzle",
+        "lógica"
+      ],
+      "file": "games/sokoban.html"
+    },
+    {
+      "id": "maze",
+      "title": "Laberinto",
+      "emoji": "🌀",
+      "category": "puzzle",
+      "description": "Laberintos perfectos generados por backtracking, cada nivel más grande.",
+      "tags": [
+        "puzzle",
+        "laberinto"
+      ],
+      "file": "games/maze.html"
+    },
+    {
+      "id": "puzzle15",
+      "title": "Puzzle 15",
+      "emoji": "🔢",
+      "category": "puzzle",
+      "description": "Rompecabezas deslizante 3x3, 4x4 y 5x5 siempre resoluble.",
+      "tags": [
+        "puzzle",
+        "clásico"
+      ],
+      "file": "games/puzzle15.html"
+    },
+    {
+      "id": "memory",
+      "title": "Memoria",
+      "emoji": "🧠",
+      "category": "puzzle",
+      "description": "Parejas de emojis en tableros de 4x4 a 8x8 con cronómetro.",
+      "tags": [
+        "memoria",
+        "puzzle"
+      ],
+      "file": "games/memory.html"
+    },
+    {
+      "id": "wordle",
+      "title": "Adivina la palabra",
+      "emoji": "🟩",
+      "category": "palabras",
+      "description": "5 letras, 6 intentos, teclado que se colorea.",
+      "tags": [
+        "palabras",
+        "lógica"
+      ],
+      "file": "games/wordle.html"
+    },
+    {
+      "id": "hangman",
+      "title": "Ahorcado",
+      "emoji": "🔤",
+      "category": "palabras",
+      "description": "Categorías, teclado en pantalla y muñeco dibujado paso a paso.",
+      "tags": [
+        "palabras",
+        "clásico"
+      ],
+      "file": "games/hangman.html"
+    },
+    {
+      "id": "sopaletras",
+      "title": "Sopa de letras",
+      "emoji": "🔎",
+      "category": "palabras",
+      "description": "Cuadrícula 12x12 con 8 palabras en 6 direcciones.",
+      "tags": [
+        "palabras",
+        "búsqueda"
+      ],
+      "file": "games/sopaletras.html"
+    },
+    {
+      "id": "typing",
+      "title": "Mecanografía",
+      "emoji": "⌨️",
+      "category": "palabras",
+      "description": "Mide tus PPM y precisión letra a letra.",
+      "tags": [
+        "palabras",
+        "velocidad"
+      ],
+      "file": "games/typing.html"
+    },
+    {
+      "id": "connect4",
+      "title": "Conecta 4",
+      "emoji": "🔴",
+      "category": "tablero",
+      "description": "IA minimax con poda alfa-beta y profundidad ajustable.",
+      "tags": [
+        "IA",
+        "tablero"
+      ],
+      "file": "games/connect4.html"
+    },
+    {
+      "id": "checkers",
+      "title": "Damas",
+      "emoji": "⚫",
+      "category": "tablero",
+      "description": "Capturas obligatorias, cadenas múltiples y coronación.",
+      "tags": [
+        "IA",
+        "tablero"
+      ],
+      "file": "games/checkers.html"
+    },
+    {
+      "id": "reversi",
+      "title": "Reversi (Othello)",
+      "emoji": "⚪",
+      "category": "tablero",
+      "description": "IA posicional con tabla de pesos de esquinas.",
+      "tags": [
+        "IA",
+        "tablero"
+      ],
+      "file": "games/reversi.html"
+    },
+    {
+      "id": "tictactoe",
+      "title": "Tres en raya",
+      "emoji": "❌",
+      "category": "tablero",
+      "description": "Modo imbatible con minimax perfecto o modo fácil.",
+      "tags": [
+        "IA",
+        "clásico"
+      ],
+      "file": "games/tictactoe.html"
+    },
+    {
+      "id": "dotsboxes",
+      "title": "Puntos y cajas",
+      "emoji": "⬜",
+      "category": "tablero",
+      "description": "Cierra cajas y encadena turnos; la IA evita regalarte cadenas.",
+      "tags": [
+        "IA",
+        "tablero"
+      ],
+      "file": "games/dotsboxes.html"
+    },
+    {
+      "id": "battleship",
+      "title": "Hundir la flota",
+      "emoji": "🚢",
+      "category": "tablero",
+      "description": "IA que remata los impactos y busca en patrón de damas.",
+      "tags": [
+        "IA",
+        "tablero"
+      ],
+      "file": "games/battleship.html"
+    },
+    {
+      "id": "snakesladders",
+      "title": "Serpientes y escaleras",
+      "emoji": "🎲",
+      "category": "tablero",
+      "description": "Tablero de 100 casillas con animación de fichas.",
+      "tags": [
+        "dados",
+        "familiar"
+      ],
+      "file": "games/snakesladders.html"
+    },
+    {
+      "id": "dados",
+      "title": "Dados (Generala)",
+      "emoji": "🎲",
+      "category": "casino",
+      "description": "13 categorías, 3 tiradas por turno y dados que se conservan.",
+      "tags": [
+        "dados",
+        "puntuación"
+      ],
+      "file": "games/dados.html"
+    },
+    {
+      "id": "blackjack",
+      "title": "Blackjack",
+      "emoji": "🃏",
+      "category": "casino",
+      "description": "Pedir, plantarse, doblar; blackjack paga 3:2.",
+      "tags": [
+        "cartas",
+        "casino"
+      ],
+      "file": "games/blackjack.html"
+    },
+    {
+      "id": "videopoker",
+      "title": "Video Poker",
+      "emoji": "🂡",
+      "category": "casino",
+      "description": "Jacks or Better con tabla de pagos y apuesta variable.",
+      "tags": [
+        "cartas",
+        "casino"
+      ],
+      "file": "games/videopoker.html"
+    },
+    {
+      "id": "minigolf",
+      "title": "Minigolf",
+      "emoji": "⛳",
+      "category": "deportes",
+      "description": "9 hoyos con obstáculos, rebotes y par por hoyo.",
+      "tags": [
+        "deportes",
+        "física"
+      ],
+      "file": "games/minigolf.html"
+    },
+    {
+      "id": "airhockey",
+      "title": "Air Hockey",
+      "emoji": "🥅",
+      "category": "deportes",
+      "description": "Duelo a 7 goles contra una CPU que defiende y contraataca.",
+      "tags": [
+        "deportes",
+        "2 jugadores"
+      ],
+      "file": "games/airhockey.html"
+    },
+    {
+      "id": "whackamole",
+      "title": "Golpea al topo",
+      "emoji": "🔨",
+      "category": "reflejos",
+      "description": "Topos y bombas que aparecen cada vez más rápido, 30 segundos.",
+      "tags": [
+        "reflejos",
+        "rapidez"
+      ],
+      "file": "games/whackamole.html"
+    },
+    {
+      "id": "reaction",
+      "title": "Test de reflejos",
+      "emoji": "⚡",
+      "category": "reflejos",
+      "description": "Mide tu tiempo de reacción con media y mejor marca.",
+      "tags": [
+        "reflejos",
+        "test"
+      ],
+      "file": "games/reaction.html"
+    },
+    {
+      "id": "simon",
+      "title": "Simón dice",
+      "emoji": "🎵",
+      "category": "reflejos",
+      "description": "Secuencias de color y sonido cada vez más largas.",
+      "tags": [
+        "memoria",
+        "reflejos"
+      ],
+      "file": "games/simon.html"
+    },
+    {
+      "id": "colormatch",
+      "title": "Color Match",
+      "emoji": "🌈",
+      "category": "reflejos",
+      "description": "Efecto Stroop: responde el color, no la palabra, contrarreloj.",
+      "tags": [
+        "reflejos",
+        "mente"
+      ],
+      "file": "games/colormatch.html"
+    },
+    {
+      "id": "fruitslice",
+      "title": "Corta frutas",
+      "emoji": "🍉",
+      "category": "reflejos",
+      "description": "Corta arrastrando, encadena combos y evita las bombas.",
+      "tags": [
+        "reflejos",
+        "arcade"
+      ],
+      "file": "games/fruitslice.html"
+    },
+    {
+      "id": "mathblitz",
+      "title": "Cálculo rápido",
+      "emoji": "➗",
+      "category": "reflejos",
+      "description": "60 segundos de operaciones con rachas y 3 dificultades.",
+      "tags": [
+        "mente",
+        "números"
+      ],
+      "file": "games/mathblitz.html"
+    },
+    {
+      "id": "stacktower",
+      "title": "Torre de bloques",
+      "emoji": "🗼",
+      "category": "reflejos",
+      "description": "Apila bloques con precisión; lo que sobresale se corta.",
+      "tags": [
+        "reflejos",
+        "precisión"
+      ],
+      "file": "games/stacktower.html"
+    },
+    {
+      "id": "rps",
+      "title": "Piedra, papel o tijera",
+      "emoji": "✊",
+      "category": "reflejos",
+      "description": "La CPU aprende tus patrones a partir de frecuencias.",
+      "tags": [
+        "IA",
+        "clásico"
+      ],
+      "file": "games/rps.html"
+    }
+  ]
+}

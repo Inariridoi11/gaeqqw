@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🦘 Salta que salta</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🦘 Salta que salta</h1></header><main>
+<div class="hud"><span>Altura <b id="s">0</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="400" height="600"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">← → o inclina/arrastra. Salta lo más alto posible; las plataformas rojas se rompen.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let p,plats,cam,score,dead,k={};
+function init(){p={x:200,y:500,vy:-420,vx:0};cam=0;score=0;dead=0;
+ plats=[{x:170,y:560,t:0}];
+ for(let i=1;i<40;i++)plats.push(mk(560-i*68));}
+function mk(y){const t=Math.random()<.15?2:Math.random()<.25?1:0;
+ return {x:Math.random()*320,y,t,dir:1,broken:0};}
+addEventListener('keydown',e=>{k[e.key]=1;if(dead&&e.key===' ')init();});
+addEventListener('keyup',e=>k[e.key]=0);
+c.ontouchmove=e=>{const r=c.getBoundingClientRect();p.x=(e.touches[0].clientX-r.left)*(400/r.width)-20;e.preventDefault();};
+Arcade.loop(dt=>{
+ if(!dead){
+  if(k.ArrowLeft)p.vx=-260; else if(k.ArrowRight)p.vx=260; else p.vx*=.85;
+  p.x+=p.vx*dt; if(p.x<-30)p.x=400; if(p.x>400)p.x=-30;
+  p.vy+=1100*dt; p.y+=p.vy*dt;
+  for(const pl of plats){
+   if(pl.t===1)pl.x+=pl.dir*70*dt, (pl.x<0||pl.x>320)&&(pl.dir*=-1);
+   if(!pl.broken&&p.vy>0&&p.x+28>pl.x&&p.x<pl.x+80&&p.y+34>pl.y&&p.y+34<pl.y+18){
+    if(pl.t===2){pl.broken=1;Arcade.beep(160,.1);}
+    else{p.vy=-480;Arcade.beep(600,.05);}}}
+  if(p.y<cam+250){cam=p.y-250;}
+  score=Math.max(score,Math.floor(-cam/10));
+  while(plats[plats.length-1].y>cam-100)plats.push(mk(plats[plats.length-1].y-60-Math.random()*40));
+  plats=plats.filter(pl=>pl.y<cam+700);
+  if(p.y>cam+640){dead=1;Arcade.beep(100,.4);}
+ }
+ x.fillStyle='#0e1424';x.fillRect(0,0,400,600);
+ for(let i=0;i<30;i++){x.fillStyle='rgba(255,255,255,.12)';x.fillRect((i*137)%400,((i*211-cam*.3)%600+600)%600,2,2);}
+ for(const pl of plats){ if(pl.broken)continue;
+  const sy=pl.y-cam; if(sy<-20||sy>620)continue;
+  x.fillStyle=pl.t===2?'#ff6b6b':pl.t===1?'#7aa2ff':'#5ee0a0';
+  x.fillRect(pl.x,sy,80,14);}
+ const py=p.y-cam;
+ x.fillStyle='#e8d24a';x.beginPath();x.ellipse(p.x+14,py+16,18,20,0,0,7);x.fill();
+ x.fillStyle='#111';x.beginPath();x.arc(p.x+8,py+10,3,0,7);x.arc(p.x+20,py+10,3,0,7);x.fill();
+ x.fillStyle='#3fbf85';x.fillRect(p.x+2,py+30,10,8);x.fillRect(p.x+18,py+30,10,8);
+ if(dead){x.fillStyle='rgba(0,0,0,.75)';x.fillRect(0,0,400,600);x.fillStyle='#ff6b6b';x.font='bold 26px monospace';x.textAlign='center';
+  x.fillText('¡CAÍSTE!',200,290);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO para reiniciar',200,320);x.textAlign='left';}
+ s.textContent=score;b.textContent=Arcade.best('doodle',score);});
+init();</script></body></html>

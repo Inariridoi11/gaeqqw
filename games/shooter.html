@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🚀 Shooter espacial</title><link rel="stylesheet" href="../assets/arcade.css"></head>
+<body><header class="bar"><button class="back" onclick="location.href='../index.html'">&larr; Arcade</button><h1>🚀 Shooter espacial</h1></header><main>
+<div class="hud"><span>Puntos <b id="s">0</b></span><span>Vida <b id="h">100</b></span><span>Nivel <b id="n">1</b></span><span>Récord <b id="b">0</b></span></div>
+<canvas id="c" width="520" height="620"></canvas>
+<div class="row"><button class="btn" onclick="init()">Reiniciar</button></div>
+<p class="help">Mueve con ratón/dedo o flechas, dispara con ESPACIO (o automático al tocar). Recoge mejoras 💠.</p></main>
+<script src="../assets/arcade.js"></script><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let sh,en,bl,eb,pw,score,hp,lvl,dead,cool,spawn,k={},auto=0;
+function init(){sh={x:260,y:540,lvlW:1};en=[];bl=[];eb=[];pw=[];score=0;hp=100;lvl=1;dead=0;cool=0;spawn=0;}
+addEventListener('keydown',e=>{k[e.key]=k[e.code]=1;if(e.code==='Space'){e.preventDefault();if(dead)init();}});
+addEventListener('keyup',e=>k[e.key]=k[e.code]=0);
+function pt(e){const r=c.getBoundingClientRect();const p=e.touches?e.touches[0]:e;
+ sh.x=(p.clientX-r.left)*(520/r.width);sh.y=Math.min(590,(p.clientY-r.top)*(620/r.height));auto=1;}
+c.addEventListener('mousemove',pt);c.addEventListener('touchmove',e=>{pt(e);e.preventDefault();});
+c.addEventListener('touchstart',e=>{pt(e);if(dead)init();e.preventDefault();});
+Arcade.loop(dt=>{
+ if(!dead){
+  if(k.ArrowLeft)sh.x-=340*dt; if(k.ArrowRight)sh.x+=340*dt;
+  if(k.ArrowUp)sh.y-=300*dt; if(k.ArrowDown)sh.y+=300*dt;
+  sh.x=Math.max(18,Math.min(502,sh.x));sh.y=Math.max(40,Math.min(600,sh.y));
+  cool-=dt;
+  if((k.Space||k[' ']||auto)&&cool<=0){cool=.16;Arcade.beep(880,.03);
+   if(sh.lvlW===1)bl.push({x:sh.x,y:sh.y-20,vx:0});
+   else if(sh.lvlW===2){bl.push({x:sh.x-9,y:sh.y-18,vx:0},{x:sh.x+9,y:sh.y-18,vx:0});}
+   else {bl.push({x:sh.x,y:sh.y-20,vx:0},{x:sh.x-10,y:sh.y-14,vx:-120},{x:sh.x+10,y:sh.y-14,vx:120});}}
+  spawn-=dt;
+  if(spawn<=0){spawn=Math.max(.28,1.1-lvl*.06);
+   const t=Math.random()<.15+lvl*.02?'big':'small';
+   en.push({x:30+Math.random()*460,y:-30,hp:t==='big'?6+lvl:2,t,vy:(t==='big'?42:70)+lvl*8,ph:Math.random()*7});}
+  for(const b of bl){b.y-=520*dt;b.x+=b.vx*dt;}
+  bl=bl.filter(b=>b.y>-20);
+  for(const e of en){e.y+=e.vy*dt;e.x+=Math.sin(performance.now()/700+e.ph)*40*dt;
+   if(Math.random()<dt*(e.t==='big'?.9:.35))eb.push({x:e.x,y:e.y+18,vx:(sh.x-e.x)*.25,vy:180});}
+  for(const b of eb){b.y+=b.vy*dt;b.x+=b.vx*dt;}
+  eb=eb.filter(b=>b.y<640);
+  for(const b of bl)for(const e of en)
+   if(e.hp>0&&Math.abs(b.x-e.x)<20&&Math.abs(b.y-e.y)<20){e.hp--;b.y=-99;
+    if(e.hp<=0){score+=e.t==='big'?150:40;Arcade.beep(300,.07);
+     if(Math.random()<.18)pw.push({x:e.x,y:e.y});}}
+  en=en.filter(e=>e.hp>0&&e.y<660);
+  for(const e of en)if(Math.hypot(e.x-sh.x,e.y-sh.y)<26){e.hp=0;hp-=18;Arcade.beep(150,.2);}
+  for(const b of eb)if(Math.hypot(b.x-sh.x,b.y-sh.y)<16){b.y=999;hp-=8;Arcade.beep(180,.12);}
+  for(const p of pw){p.y+=90*dt;
+   if(Math.hypot(p.x-sh.x,p.y-sh.y)<24){p.got=1;sh.lvlW=Math.min(3,sh.lvlW+1);hp=Math.min(100,hp+10);Arcade.beep(1200,.15);}}
+  pw=pw.filter(p=>!p.got&&p.y<650);
+  if(hp<=0){dead=1;Arcade.beep(90,.5);}
+  if(score>lvl*900){lvl++;}
+ }
+ x.fillStyle='#04050a';x.fillRect(0,0,520,620);
+ for(let i=0;i<60;i++){x.fillStyle='rgba(255,255,255,'+(.1+(i%5)*.08)+')';
+  x.fillRect((i*89)%520,((i*57+performance.now()/(8-(i%5)))%620),2,2);}
+ for(const e of en){x.fillStyle=e.t==='big'?'#b06bd6':'#ff6b6b';
+  x.beginPath();x.arc(e.x,e.y,e.t==='big'?22:14,0,7);x.fill();
+  x.fillStyle='#0b0d14';x.fillRect(e.x-8,e.y-2,16,5);}
+ x.fillStyle='#ffe23d';for(const b of bl)x.fillRect(b.x-2,b.y-8,4,12);
+ x.fillStyle='#ff9e4a';for(const b of eb)x.fillRect(b.x-2,b.y,4,8);
+ for(const p of pw){x.fillStyle='#4fd6e0';x.beginPath();
+  x.moveTo(p.x,p.y-10);x.lineTo(p.x+10,p.y);x.lineTo(p.x,p.y+10);x.lineTo(p.x-10,p.y);x.fill();}
+ x.fillStyle='#5ee0a0';x.beginPath();x.moveTo(sh.x,sh.y-20);x.lineTo(sh.x+16,sh.y+16);x.lineTo(sh.x,sh.y+8);x.lineTo(sh.x-16,sh.y+16);x.fill();
+ x.fillStyle='#ff9e4a';x.fillRect(sh.x-4,sh.y+10,8,8+Math.random()*8);
+ if(dead){x.fillStyle='rgba(0,0,0,.78)';x.fillRect(0,0,520,620);x.fillStyle='#ff6b6b';x.font='bold 28px monospace';x.textAlign='center';
+  x.fillText('NAVE DESTRUIDA',260,300);x.font='13px monospace';x.fillStyle='#94a0bd';x.fillText('ESPACIO/toca para reiniciar',260,330);x.textAlign='left';}
+ s.textContent=score;h.textContent=Math.max(0,hp);n.textContent=lvl;b.textContent=Arcade.best('shooter',score);});
+init();</script></body></html>
